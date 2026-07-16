@@ -16,6 +16,8 @@ export default function HomeScreen() {
   const [showExpenseDetail, setShowExpenseDetail] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [selectedExpense, setSelectedExpense] = useState(null);
+  const [selectedBill, setSelectedBill] = useState(null);
+  const [showBillDetail, setShowBillDetail] = useState(false);
   const [invoices, setInvoices] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [bills, setBills] = useState([]);
@@ -199,17 +201,42 @@ export default function HomeScreen() {
         <View style={{paddingHorizontal:24,marginTop:16,marginBottom:24}}>
           <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12}}>RECENT BILLS</Text>
           {bills.slice(0,5).map(bill => (
-            <View key={bill.id} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+            <TouchableOpacity key={bill.id} onPress={()=>{setSelectedBill(bill);setShowBillDetail(true);}} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
               <View>
                 <Text style={{color:'#fff',fontWeight:'500'}}>{bill.vendor}</Text>
                 <Text style={{color:'#7A9A7A',fontSize:12,marginTop:2}}>{bill.status}</Text>
               </View>
               <Text style={{color:'#D4A8A8',fontWeight:'600'}}>{fmt(bill.amount)}</Text>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       )}
-      <Modal visible={showDetail} animationType="slide" presentationStyle="pageSheet">
+      <Modal visible={showBillDetail} animationType="slide" presentationStyle="pageSheet">
+        <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
+          <View style={{padding:24,paddingTop:60}}>
+            <TouchableOpacity onPress={()=>setShowBillDetail(false)} style={{marginBottom:24}}>
+              <Text style={{color:'#A8D4A8',fontSize:16}}>Close</Text>
+            </TouchableOpacity>
+            {selectedBill && (
+              <View>
+                <Text style={{color:'#fff',fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedBill.vendor}</Text>
+                <Text style={{color:'#7A9A7A',fontSize:14,marginBottom:24,textTransform:'capitalize'}}>{selectedBill.status}</Text>
+                <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:16}}>
+                  <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>DESCRIPTION</Text>
+                  <Text style={{color:'#fff',fontSize:15}}>{selectedBill.description || 'No description'}</Text>
+                </View>
+                <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:16}}>
+                  <View style={{flexDirection:'row',justifyContent:'space-between'}}>
+                    <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>Amount Due</Text>
+                    <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>{fmt(selectedBill.amount)}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </Modal>
+<Modal visible={showDetail} animationType="slide" presentationStyle="pageSheet">
         <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <View style={{padding:24,paddingTop:60}}>
             <TouchableOpacity onPress={()=>setShowDetail(false)} style={{marginBottom:24}}>
@@ -344,3 +371,6 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
+
+
