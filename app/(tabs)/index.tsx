@@ -119,8 +119,9 @@ export default function HomeScreen() {
   if (!user) {
     return (
       <View style={{flex:1,backgroundColor:'#2D4A35',alignItems:'center',justifyContent:'center',padding:24}}>
-        <Text style={{fontSize:42,fontWeight:'700',color:'#A8D4A8',marginBottom:8}}>Ledger</Text>
-        <Text style={{fontSize:14,color:'#7A9A7A',marginBottom:40}}>Small business accounting</Text>
+        <Text style={{fontSize:32,fontWeight:'700',color:'#A8D4A8',marginBottom:2}}>Mountain Top</Text>
+        <Text style={{fontSize:32,fontWeight:'700',color:'#A8D4A8',marginBottom:8}}>Ledger</Text>
+        <Text style={{fontSize:14,color:'#7A9A7A',marginBottom:40}}>Small business accounting, simplified</Text>
         <TextInput style={{width:'100%',backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:12}} placeholder="Email" placeholderTextColor="#7A9A7A" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
         <TextInput style={{width:'100%',backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:20}} placeholder="Password" placeholderTextColor="#7A9A7A" value={password} onChangeText={setPassword} secureTextEntry />
         <TouchableOpacity style={{width:'100%',backgroundColor:'#A8D4A8',borderRadius:12,padding:16,alignItems:'center'}} onPress={login}>
@@ -371,6 +372,9 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
+
+
 
 
 
