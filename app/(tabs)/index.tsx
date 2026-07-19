@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Alert, ScrollView, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Alert, ScrollView, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 
 const API = 'https://ledger-accounting-production.up.railway.app/api';
 
@@ -14,16 +14,18 @@ export default function HomeScreen() {
   const [showBill, setShowBill] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [showExpenseDetail, setShowExpenseDetail] = useState(false);
+  const [showBillDetail, setShowBillDetail] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [selectedBill, setSelectedBill] = useState(null);
-  const [showBillDetail, setShowBillDetail] = useState(false);
   const [invoices, setInvoices] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [bills, setBills] = useState([]);
   const [form, setForm] = useState({ clientName:'', clientEmail:'', description:'', quantity:'1', price:'' });
   const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'' });
   const [billForm, setBillForm] = useState({ vendor:'', amount:'', description:'' });
+  const [regForm, setRegForm] = useState({ fullName:'', orgName:'', email:'', password:'' });
 
   async function login() {
     try {
@@ -36,6 +38,22 @@ export default function HomeScreen() {
         loadExpenses(d.orgs?.[0]?.id, d.accessToken);
         loadBills(d.orgs?.[0]?.id, d.accessToken);
       } else Alert.alert('Error', 'Invalid credentials');
+    } catch(e) { Alert.alert('Error', 'Cannot connect'); }
+  }
+
+  async function register() {
+    if (!regForm.fullName || !regForm.orgName || !regForm.email || !regForm.password) return Alert.alert('Error', 'Please fill in all fields');
+    try {
+      const r = await fetch(API+'/auth/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(regForm) });
+      const j = await r.json();
+      const d = j.data || j;
+      if (d.user) {
+        setUser(d.user); setOrg(d.orgs?.[0]); setToken(d.accessToken);
+        setShowRegister(false);
+        loadInvoices(d.orgs?.[0]?.id, d.accessToken);
+        loadExpenses(d.orgs?.[0]?.id, d.accessToken);
+        loadBills(d.orgs?.[0]?.id, d.accessToken);
+      } else Alert.alert('Error', j.message || 'Registration failed');
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
   }
 
@@ -118,16 +136,48 @@ export default function HomeScreen() {
 
   if (!user) {
     return (
-      <View style={{flex:1,backgroundColor:'#2D4A35',alignItems:'center',justifyContent:'center',padding:24}}>
-        <Text style={{fontSize:32,fontWeight:'700',color:'#A8D4A8',marginBottom:2}}>Mountain Top</Text>
-        <Text style={{fontSize:32,fontWeight:'700',color:'#A8D4A8',marginBottom:8}}>Ledger</Text>
-        <Text style={{fontSize:14,color:'#7A9A7A',marginBottom:40}}>Small business accounting, simplified</Text>
-        <TextInput style={{width:'100%',backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:12}} placeholder="Email" placeholderTextColor="#7A9A7A" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-        <TextInput style={{width:'100%',backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:20}} placeholder="Password" placeholderTextColor="#7A9A7A" value={password} onChangeText={setPassword} secureTextEntry />
-        <TouchableOpacity style={{width:'100%',backgroundColor:'#A8D4A8',borderRadius:12,padding:16,alignItems:'center'}} onPress={login}>
-          <Text style={{fontSize:16,fontWeight:'600',color:'#2D4A35'}}>Sign in</Text>
-        </TouchableOpacity>
-      </View>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#2D4A35'}}>
+        <ScrollView contentContainerStyle={{flexGrow:1,alignItems:'center',justifyContent:'center',padding:24}}>
+          <Text style={{fontSize:32,fontWeight:'700',color:'#A8D4A8',marginBottom:2}}>Mountain Top</Text>
+          <Text style={{fontSize:32,fontWeight:'700',color:'#A8D4A8',marginBottom:8}}>Ledger</Text>
+          <Text style={{fontSize:14,color:'#7A9A7A',marginBottom:40}}>Small business accounting, simplified</Text>
+          <TextInput style={{width:'100%',backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:12}} placeholder="Email" placeholderTextColor="#7A9A7A" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+          <TextInput style={{width:'100%',backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:20}} placeholder="Password" placeholderTextColor="#7A9A7A" value={password} onChangeText={setPassword} secureTextEntry />
+          <TouchableOpacity style={{width:'100%',backgroundColor:'#A8D4A8',borderRadius:12,padding:16,alignItems:'center'}} onPress={login}>
+            <Text style={{fontSize:16,fontWeight:'600',color:'#2D4A35'}}>Sign in</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={{marginTop:16}} onPress={()=>setShowRegister(true)}>
+            <Text style={{color:'#7A9A7A',fontSize:14,textAlign:'center'}}>Don't have an account? <Text style={{color:'#A8D4A8'}}>Register</Text></Text>
+          </TouchableOpacity>
+        </ScrollView>
+        <Modal visible={showRegister} animationType="slide" presentationStyle="pageSheet">
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#2D4A35'}}>
+            <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
+              <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
+  <TouchableOpacity onPress={()=>setShowRegister(false)}>
+    <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
+  </TouchableOpacity>
+  <Text style={{color:'#fff',fontSize:17,fontWeight:'600'}}>Register</Text>
+  <TouchableOpacity onPress={register}>
+    <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Save</Text>
+  </TouchableOpacity>
+</View>              <Text style={{fontSize:28,fontWeight:'700',color:'#A8D4A8',marginBottom:4}}>Create account</Text>
+              <Text style={{fontSize:14,color:'#7A9A7A',marginBottom:32}}>Start your free trial today</Text>
+              <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>FULL NAME</Text>
+              <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:16,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.fullName} onChangeText={v=>setRegForm(f=>({...f,fullName:v}))} placeholder="Jane Smith" placeholderTextColor="#7A9A7A" />
+              <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>COMPANY NAME</Text>
+              <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:16,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.orgName} onChangeText={v=>setRegForm(f=>({...f,orgName:v}))} placeholder="Acme Co." placeholderTextColor="#7A9A7A" />
+              <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>EMAIL</Text>
+              <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:16,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.email} onChangeText={v=>setRegForm(f=>({...f,email:v}))} placeholder="you@company.com" placeholderTextColor="#7A9A7A" keyboardType="email-address" autoCapitalize="none" />
+              <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>PASSWORD</Text>
+              <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:32,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.password} onChangeText={v=>setRegForm(f=>({...f,password:v}))} placeholder="Min 8 characters" placeholderTextColor="#7A9A7A" secureTextEntry /><View style={{height:16}} />
+              <TouchableOpacity style={{backgroundColor:'#A8D4A8',borderRadius:12,padding:16,alignItems:'center'}} onPress={register}>
+                <Text style={{fontSize:16,fontWeight:'600',color:'#2D4A35'}}>Create Account</Text>
+              </TouchableOpacity><Text style={{fontSize:20,fontWeight:'700',color:'#3D5A45',textAlign:'center',marginTop:40,marginBottom:40}}>Mountain Top Ledger</Text>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </Modal>
+      </KeyboardAvoidingView>
     );
   }
 
@@ -212,32 +262,7 @@ export default function HomeScreen() {
           ))}
         </View>
       )}
-      <Modal visible={showBillDetail} animationType="slide" presentationStyle="pageSheet">
-        <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
-          <View style={{padding:24,paddingTop:60}}>
-            <TouchableOpacity onPress={()=>setShowBillDetail(false)} style={{marginBottom:24}}>
-              <Text style={{color:'#A8D4A8',fontSize:16}}>Close</Text>
-            </TouchableOpacity>
-            {selectedBill && (
-              <View>
-                <Text style={{color:'#fff',fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedBill.vendor}</Text>
-                <Text style={{color:'#7A9A7A',fontSize:14,marginBottom:24,textTransform:'capitalize'}}>{selectedBill.status}</Text>
-                <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:16}}>
-                  <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>DESCRIPTION</Text>
-                  <Text style={{color:'#fff',fontSize:15}}>{selectedBill.description || 'No description'}</Text>
-                </View>
-                <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:16}}>
-                  <View style={{flexDirection:'row',justifyContent:'space-between'}}>
-                    <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>Amount Due</Text>
-                    <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>{fmt(selectedBill.amount)}</Text>
-                  </View>
-                </View>
-              </View>
-            )}
-          </View>
-        </ScrollView>
-      </Modal>
-<Modal visible={showDetail} animationType="slide" presentationStyle="pageSheet">
+      <Modal visible={showDetail} animationType="slide" presentationStyle="pageSheet">
         <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <View style={{padding:24,paddingTop:60}}>
             <TouchableOpacity onPress={()=>setShowDetail(false)} style={{marginBottom:24}}>
@@ -287,9 +312,34 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
       </Modal>
-      <Modal visible={showInvoice} animationType="slide" presentationStyle="pageSheet">
+      <Modal visible={showBillDetail} animationType="slide" presentationStyle="pageSheet">
         <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <View style={{padding:24,paddingTop:60}}>
+            <TouchableOpacity onPress={()=>setShowBillDetail(false)} style={{marginBottom:24}}>
+              <Text style={{color:'#A8D4A8',fontSize:16}}>Close</Text>
+            </TouchableOpacity>
+            {selectedBill && (
+              <View>
+                <Text style={{color:'#fff',fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedBill.vendor}</Text>
+                <Text style={{color:'#7A9A7A',fontSize:14,marginBottom:24,textTransform:'capitalize'}}>{selectedBill.status}</Text>
+                <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:16}}>
+                  <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>DESCRIPTION</Text>
+                  <Text style={{color:'#fff',fontSize:15}}>{selectedBill.description || 'No description'}</Text>
+                </View>
+                <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:16}}>
+                  <View style={{flexDirection:'row',justifyContent:'space-between'}}>
+                    <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>Amount Due</Text>
+                    <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>{fmt(selectedBill.amount)}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </Modal>
+      <Modal visible={showInvoice} animationType="slide" presentationStyle="pageSheet">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
+          <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
               <TouchableOpacity onPress={()=>setShowInvoice(false)}>
                 <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
@@ -318,12 +368,12 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={()=>setShowInvoice(false)} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginTop:8}}>
               <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Cancel</Text>
             </TouchableOpacity>
-          </View>
-        </ScrollView>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
       <Modal visible={showExpense} animationType="slide" presentationStyle="pageSheet">
-        <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
-          <View style={{padding:24,paddingTop:60}}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
+          <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
               <TouchableOpacity onPress={()=>setShowExpense(false)}>
                 <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
@@ -342,12 +392,12 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={()=>setShowExpense(false)} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginTop:8}}>
               <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Cancel</Text>
             </TouchableOpacity>
-          </View>
-        </ScrollView>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
       <Modal visible={showBill} animationType="slide" presentationStyle="pageSheet">
-        <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
-          <View style={{padding:24,paddingTop:60}}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
+          <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
               <TouchableOpacity onPress={()=>setShowBill(false)}>
                 <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
@@ -366,15 +416,12 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={()=>setShowBill(false)} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginTop:8}}>
               <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Cancel</Text>
             </TouchableOpacity>
-          </View>
-        </ScrollView>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </ScrollView>
   );
 }
-
-
-
 
 
 
