@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ledger-app",
+    "name": "Mountain Top Ledger",
     "slug": "ledger-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -33,7 +33,7 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#1a3a1a",
           "dark": {
             "backgroundColor": "#000000"
           }
@@ -46,3 +46,5 @@
     }
   }
 }
+
+
