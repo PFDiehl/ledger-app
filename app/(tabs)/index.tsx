@@ -26,6 +26,9 @@ export default function HomeScreen() {
   const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'' });
   const [billForm, setBillForm] = useState({ vendor:'', amount:'', description:'' });
   const [regForm, setRegForm] = useState({ fullName:'', orgName:'', email:'', password:'' });
+  const [editingInvoice, setEditingInvoice] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(false);
+  const [editingBill, setEditingBill] = useState(false);
 
   async function login() {
     try {
@@ -84,16 +87,15 @@ export default function HomeScreen() {
   async function saveInvoice() {
     if (!form.clientName || !form.price) return Alert.alert('Error', 'Fill in client name and price');
     try {
-      const r = await fetch(API+'/orgs/'+org.id+'/invoices', {
-        method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-        body:JSON.stringify(form)
-      });
+      const method = editingInvoice ? 'PATCH' : 'POST';
+      const url = editingInvoice ? API+'/orgs/'+org.id+'/invoices/'+selectedInvoice.id : API+'/orgs/'+org.id+'/invoices';
+      const r = await fetch(url, { method, headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify(form) });
       const j = await r.json();
       if (j.success) {
-        setShowInvoice(false);
+        setShowInvoice(false); setEditingInvoice(false);
         setForm({ clientName:'', clientEmail:'', description:'', quantity:'1', price:'' });
         loadInvoices(org.id, token);
-        Alert.alert('Saved!', 'Invoice created');
+        Alert.alert('Saved!', editingInvoice ? 'Invoice updated' : 'Invoice created');
       } else Alert.alert('Error', j.message || 'Failed');
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
   }
@@ -101,16 +103,15 @@ export default function HomeScreen() {
   async function saveExpense() {
     if (!expenseForm.vendor || !expenseForm.amount) return Alert.alert('Error', 'Fill in vendor and amount');
     try {
-      const r = await fetch(API+'/orgs/'+org.id+'/expenses', {
-        method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-        body:JSON.stringify(expenseForm)
-      });
+      const method = editingExpense ? 'PATCH' : 'POST';
+      const url = editingExpense ? API+'/orgs/'+org.id+'/expenses/'+selectedExpense.id : API+'/orgs/'+org.id+'/expenses';
+      const r = await fetch(url, { method, headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify(expenseForm) });
       const j = await r.json();
       if (j.success) {
-        setShowExpense(false);
+        setShowExpense(false); setEditingExpense(false);
         setExpenseForm({ vendor:'', amount:'', description:'' });
         loadExpenses(org.id, token);
-        Alert.alert('Saved!', 'Expense recorded');
+        Alert.alert('Saved!', editingExpense ? 'Expense updated' : 'Expense recorded');
       } else Alert.alert('Error', j.message || 'Failed');
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
   }
@@ -118,18 +119,83 @@ export default function HomeScreen() {
   async function saveBill() {
     if (!billForm.vendor || !billForm.amount) return Alert.alert('Error', 'Fill in vendor and amount');
     try {
-      const r = await fetch(API+'/orgs/'+org.id+'/bills', {
-        method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-        body:JSON.stringify(billForm)
-      });
+      const method = editingBill ? 'PATCH' : 'POST';
+      const url = editingBill ? API+'/orgs/'+org.id+'/bills/'+selectedBill.id : API+'/orgs/'+org.id+'/bills';
+      const r = await fetch(url, { method, headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify(billForm) });
       const j = await r.json();
       if (j.success) {
-        setShowBill(false);
+        setShowBill(false); setEditingBill(false);
         setBillForm({ vendor:'', amount:'', description:'' });
         loadBills(org.id, token);
-        Alert.alert('Saved!', 'Bill recorded');
+        Alert.alert('Saved!', editingBill ? 'Bill updated' : 'Bill recorded');
       } else Alert.alert('Error', j.message || 'Failed');
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
+  }
+
+  async function deleteInvoice(id) {
+    Alert.alert('Delete Invoice', 'Are you sure?', [
+      { text:'Cancel', style:'cancel' },
+      { text:'Delete', style:'destructive', onPress: async () => {
+        try {
+          const r = await fetch(API+'/orgs/'+org.id+'/invoices/'+id, { method:'DELETE', headers:{'Authorization':'Bearer '+token} });
+          const j = await r.json();
+          if (j.success) { setShowDetail(false); loadInvoices(org.id, token); Alert.alert('Deleted', 'Invoice removed'); }
+          else Alert.alert('Error', j.message || 'Failed');
+        } catch(e) { Alert.alert('Error', 'Cannot connect'); }
+      }}
+    ]);
+  }
+
+  async function deleteExpense(id) {
+    Alert.alert('Delete Expense', 'Are you sure?', [
+      { text:'Cancel', style:'cancel' },
+      { text:'Delete', style:'destructive', onPress: async () => {
+        try {
+          const r = await fetch(API+'/orgs/'+org.id+'/expenses/'+id, { method:'DELETE', headers:{'Authorization':'Bearer '+token} });
+          const j = await r.json();
+          if (j.success) { setShowExpenseDetail(false); loadExpenses(org.id, token); Alert.alert('Deleted', 'Expense removed'); }
+          else Alert.alert('Error', j.message || 'Failed');
+        } catch(e) { Alert.alert('Error', 'Cannot connect'); }
+      }}
+    ]);
+  }
+
+  async function deleteBill(id) {
+    Alert.alert('Delete Bill', 'Are you sure?', [
+      { text:'Cancel', style:'cancel' },
+      { text:'Delete', style:'destructive', onPress: async () => {
+        try {
+          const r = await fetch(API+'/orgs/'+org.id+'/bills/'+id, { method:'DELETE', headers:{'Authorization':'Bearer '+token} });
+          const j = await r.json();
+          if (j.success) { setShowBillDetail(false); loadBills(org.id, token); Alert.alert('Deleted', 'Bill removed'); }
+          else Alert.alert('Error', j.message || 'Failed');
+        } catch(e) { Alert.alert('Error', 'Cannot connect'); }
+      }}
+    ]);
+  }
+
+  function editInvoice(inv) {
+    setSelectedInvoice(inv);
+    setForm({ clientName: inv.contact?.name||'', clientEmail: inv.contact?.email||'', description: inv.notes||'', quantity:'1', price: inv.total||'' });
+    setEditingInvoice(true);
+    setShowDetail(false);
+    setShowInvoice(true);
+  }
+
+  function editExpense(exp) {
+    setSelectedExpense(exp);
+    setExpenseForm({ vendor: exp.vendor||'', amount: exp.amount||'', description: exp.description||'' });
+    setEditingExpense(true);
+    setShowExpenseDetail(false);
+    setShowExpense(true);
+  }
+
+  function editBill(bill) {
+    setSelectedBill(bill);
+    setBillForm({ vendor: bill.vendor||'', amount: bill.amount||'', description: bill.description||'' });
+    setEditingBill(true);
+    setShowBillDetail(false);
+    setShowBill(true);
   }
 
   function fmt(n) { return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2}); }
@@ -154,14 +220,15 @@ export default function HomeScreen() {
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#2D4A35'}}>
             <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
               <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
-  <TouchableOpacity onPress={()=>setShowRegister(false)}>
-    <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
-  </TouchableOpacity>
-  <Text style={{color:'#fff',fontSize:17,fontWeight:'600'}}>Register</Text>
-  <TouchableOpacity onPress={register}>
-    <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Save</Text>
-  </TouchableOpacity>
-</View>              <Text style={{fontSize:28,fontWeight:'700',color:'#A8D4A8',marginBottom:4}}>Create account</Text>
+                <TouchableOpacity onPress={()=>setShowRegister(false)}>
+                  <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
+                </TouchableOpacity>
+                <Text style={{color:'#fff',fontSize:17,fontWeight:'600'}}>Register</Text>
+                <TouchableOpacity onPress={register}>
+                  <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Save</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={{fontSize:28,fontWeight:'700',color:'#A8D4A8',marginBottom:4}}>Create account</Text>
               <Text style={{fontSize:14,color:'#7A9A7A',marginBottom:32}}>Start your free trial today</Text>
               <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>FULL NAME</Text>
               <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:16,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.fullName} onChangeText={v=>setRegForm(f=>({...f,fullName:v}))} placeholder="Jane Smith" placeholderTextColor="#7A9A7A" />
@@ -170,10 +237,12 @@ export default function HomeScreen() {
               <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>EMAIL</Text>
               <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:16,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.email} onChangeText={v=>setRegForm(f=>({...f,email:v}))} placeholder="you@company.com" placeholderTextColor="#7A9A7A" keyboardType="email-address" autoCapitalize="none" />
               <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>PASSWORD</Text>
-              <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:32,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.password} onChangeText={v=>setRegForm(f=>({...f,password:v}))} placeholder="Min 8 characters" placeholderTextColor="#7A9A7A" secureTextEntry /><View style={{height:16}} />
+              <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:16,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.password} onChangeText={v=>setRegForm(f=>({...f,password:v}))} placeholder="Min 8 characters" placeholderTextColor="#7A9A7A" secureTextEntry />
+              <View style={{height:16}} />
               <TouchableOpacity style={{backgroundColor:'#A8D4A8',borderRadius:12,padding:16,alignItems:'center'}} onPress={register}>
                 <Text style={{fontSize:16,fontWeight:'600',color:'#2D4A35'}}>Create Account</Text>
-              </TouchableOpacity><Text style={{fontSize:20,fontWeight:'700',color:'#3D5A45',textAlign:'center',marginTop:40,marginBottom:40}}>Mountain Top Ledger</Text>
+              </TouchableOpacity>
+              <Text style={{fontSize:20,fontWeight:'700',color:'#3D5A45',textAlign:'center',marginTop:40,marginBottom:40}}>Mountain Top Ledger</Text>
             </ScrollView>
           </KeyboardAvoidingView>
         </Modal>
@@ -208,15 +277,16 @@ export default function HomeScreen() {
           <Text style={{color:'#7A9A7A',fontSize:11,marginTop:4}}>{expenses.length} expenses</Text>
         </View>
       </View>
-      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#2D4A35',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>setShowInvoice(true)}>
+      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#2D4A35',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingInvoice(false);setForm({clientName:'',clientEmail:'',description:'',quantity:'1',price:''});setShowInvoice(true);}}>
         <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>+ New Invoice</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>setShowExpense(true)}>
+      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingExpense(false);setExpenseForm({vendor:'',amount:'',description:''});setShowExpense(true);}}>
         <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>+ Add Expense</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#4A3D2D',borderRadius:12,padding:16,alignItems:'center',marginBottom:24}} onPress={()=>setShowBill(true)}>
+      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#4A3D2D',borderRadius:12,padding:16,alignItems:'center',marginBottom:24}} onPress={()=>{setEditingBill(false);setBillForm({vendor:'',amount:'',description:''});setShowBill(true);}}>
         <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>+ Add Bill</Text>
       </TouchableOpacity>
+
       {invoices.length > 0 && (
         <View style={{paddingHorizontal:24}}>
           <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12}}>RECENT INVOICES</Text>
@@ -234,6 +304,7 @@ export default function HomeScreen() {
           ))}
         </View>
       )}
+
       {expenses.length > 0 && (
         <View style={{paddingHorizontal:24,marginTop:16}}>
           <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12}}>RECENT EXPENSES</Text>
@@ -248,6 +319,7 @@ export default function HomeScreen() {
           ))}
         </View>
       )}
+
       {bills.length > 0 && (
         <View style={{paddingHorizontal:24,marginTop:16,marginBottom:24}}>
           <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12}}>RECENT BILLS</Text>
@@ -262,12 +334,23 @@ export default function HomeScreen() {
           ))}
         </View>
       )}
+
       <Modal visible={showDetail} animationType="slide" presentationStyle="pageSheet">
         <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <View style={{padding:24,paddingTop:60}}>
-            <TouchableOpacity onPress={()=>setShowDetail(false)} style={{marginBottom:24}}>
-              <Text style={{color:'#A8D4A8',fontSize:16}}>Close</Text>
-            </TouchableOpacity>
+            <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
+              <TouchableOpacity onPress={()=>setShowDetail(false)}>
+                <Text style={{color:'#A8D4A8',fontSize:16}}>Close</Text>
+              </TouchableOpacity>
+              <View style={{flexDirection:'row',gap:12}}>
+                <TouchableOpacity onPress={()=>editInvoice(selectedInvoice)} style={{backgroundColor:'#2D4A35',borderRadius:8,padding:8,paddingHorizontal:12}}>
+                  <Text style={{color:'#A8D4A8',fontSize:13}}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={()=>deleteInvoice(selectedInvoice.id)} style={{backgroundColor:'#4a1a1a',borderRadius:8,padding:8,paddingHorizontal:12}}>
+                  <Text style={{color:'#D4A8A8',fontSize:13}}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
             {selectedInvoice && (
               <View>
                 <Text style={{color:'#fff',fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedInvoice.invoiceNumber}</Text>
@@ -287,12 +370,23 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
       </Modal>
+
       <Modal visible={showExpenseDetail} animationType="slide" presentationStyle="pageSheet">
         <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <View style={{padding:24,paddingTop:60}}>
-            <TouchableOpacity onPress={()=>setShowExpenseDetail(false)} style={{marginBottom:24}}>
-              <Text style={{color:'#A8D4A8',fontSize:16}}>Close</Text>
-            </TouchableOpacity>
+            <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
+              <TouchableOpacity onPress={()=>setShowExpenseDetail(false)}>
+                <Text style={{color:'#A8D4A8',fontSize:16}}>Close</Text>
+              </TouchableOpacity>
+              <View style={{flexDirection:'row',gap:12}}>
+                <TouchableOpacity onPress={()=>editExpense(selectedExpense)} style={{backgroundColor:'#2D4A35',borderRadius:8,padding:8,paddingHorizontal:12}}>
+                  <Text style={{color:'#A8D4A8',fontSize:13}}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={()=>deleteExpense(selectedExpense.id)} style={{backgroundColor:'#4a1a1a',borderRadius:8,padding:8,paddingHorizontal:12}}>
+                  <Text style={{color:'#D4A8A8',fontSize:13}}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
             {selectedExpense && (
               <View>
                 <Text style={{color:'#fff',fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedExpense.vendor}</Text>
@@ -312,12 +406,23 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
       </Modal>
+
       <Modal visible={showBillDetail} animationType="slide" presentationStyle="pageSheet">
         <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <View style={{padding:24,paddingTop:60}}>
-            <TouchableOpacity onPress={()=>setShowBillDetail(false)} style={{marginBottom:24}}>
-              <Text style={{color:'#A8D4A8',fontSize:16}}>Close</Text>
-            </TouchableOpacity>
+            <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
+              <TouchableOpacity onPress={()=>setShowBillDetail(false)}>
+                <Text style={{color:'#A8D4A8',fontSize:16}}>Close</Text>
+              </TouchableOpacity>
+              <View style={{flexDirection:'row',gap:12}}>
+                <TouchableOpacity onPress={()=>editBill(selectedBill)} style={{backgroundColor:'#2D4A35',borderRadius:8,padding:8,paddingHorizontal:12}}>
+                  <Text style={{color:'#A8D4A8',fontSize:13}}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={()=>deleteBill(selectedBill.id)} style={{backgroundColor:'#4a1a1a',borderRadius:8,padding:8,paddingHorizontal:12}}>
+                  <Text style={{color:'#D4A8A8',fontSize:13}}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
             {selectedBill && (
               <View>
                 <Text style={{color:'#fff',fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedBill.vendor}</Text>
@@ -337,14 +442,15 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
       </Modal>
+
       <Modal visible={showInvoice} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
-              <TouchableOpacity onPress={()=>setShowInvoice(false)}>
+              <TouchableOpacity onPress={()=>{setShowInvoice(false);setEditingInvoice(false);}}>
                 <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
               </TouchableOpacity>
-              <Text style={{color:'#fff',fontSize:17,fontWeight:'600'}}>New Invoice</Text>
+              <Text style={{color:'#fff',fontSize:17,fontWeight:'600'}}>{editingInvoice ? 'Edit Invoice' : 'New Invoice'}</Text>
               <TouchableOpacity onPress={saveInvoice}>
                 <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Save</Text>
               </TouchableOpacity>
@@ -365,20 +471,21 @@ export default function HomeScreen() {
                 <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,borderWidth:1,borderColor:'#3D5A45'}} value={form.price} onChangeText={v=>setForm(f=>({...f,price:v}))} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
               </View>
             </View>
-            <TouchableOpacity onPress={()=>setShowInvoice(false)} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginTop:8}}>
+            <TouchableOpacity onPress={()=>{setShowInvoice(false);setEditingInvoice(false);}} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginTop:8}}>
               <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Cancel</Text>
             </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
+
       <Modal visible={showExpense} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
-              <TouchableOpacity onPress={()=>setShowExpense(false)}>
+              <TouchableOpacity onPress={()=>{setShowExpense(false);setEditingExpense(false);}}>
                 <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
               </TouchableOpacity>
-              <Text style={{color:'#fff',fontSize:17,fontWeight:'600'}}>New Expense</Text>
+              <Text style={{color:'#fff',fontSize:17,fontWeight:'600'}}>{editingExpense ? 'Edit Expense' : 'New Expense'}</Text>
               <TouchableOpacity onPress={saveExpense}>
                 <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Save</Text>
               </TouchableOpacity>
@@ -389,20 +496,21 @@ export default function HomeScreen() {
             <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={expenseForm.amount} onChangeText={v=>setExpenseForm(f=>({...f,amount:v}))} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DESCRIPTION</Text>
             <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={expenseForm.description} onChangeText={v=>setExpenseForm(f=>({...f,description:v}))} placeholder="Office supplies" placeholderTextColor="#7A9A7A" />
-            <TouchableOpacity onPress={()=>setShowExpense(false)} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginTop:8}}>
+            <TouchableOpacity onPress={()=>{setShowExpense(false);setEditingExpense(false);}} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginTop:8}}>
               <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Cancel</Text>
             </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
+
       <Modal visible={showBill} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
-              <TouchableOpacity onPress={()=>setShowBill(false)}>
+              <TouchableOpacity onPress={()=>{setShowBill(false);setEditingBill(false);}}>
                 <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
               </TouchableOpacity>
-              <Text style={{color:'#fff',fontSize:17,fontWeight:'600'}}>New Bill</Text>
+              <Text style={{color:'#fff',fontSize:17,fontWeight:'600'}}>{editingBill ? 'Edit Bill' : 'New Bill'}</Text>
               <TouchableOpacity onPress={saveBill}>
                 <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>Save</Text>
               </TouchableOpacity>
@@ -413,7 +521,7 @@ export default function HomeScreen() {
             <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={billForm.amount} onChangeText={v=>setBillForm(f=>({...f,amount:v}))} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DESCRIPTION</Text>
             <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={billForm.description} onChangeText={v=>setBillForm(f=>({...f,description:v}))} placeholder="Monthly rent" placeholderTextColor="#7A9A7A" />
-            <TouchableOpacity onPress={()=>setShowBill(false)} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginTop:8}}>
+            <TouchableOpacity onPress={()=>{setShowBill(false);setEditingBill(false);}} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginTop:8}}>
               <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Cancel</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -422,7 +530,3 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
-
-
-
-
