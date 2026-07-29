@@ -30,7 +30,7 @@ export default function HomeScreen() {
   const [regForm, setRegForm] = useState({ fullName:'', orgName:'', email:'', password:'' });
   const [editingInvoice, setEditingInvoice] = useState(false);
   const [editingExpense, setEditingExpense] = useState(false);
-  const [editingBill, setEditingBill] = useState(false);
+  const [editingBill, setEditingBill] = useState(false);const [showReports, setShowReports] = useState(false);
 
   async function login() {
     try {
@@ -312,6 +312,8 @@ export default function HomeScreen() {
       </TouchableOpacity>
       <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#4A3D2D',borderRadius:12,padding:16,alignItems:'center',marginBottom:24}} onPress={()=>{setEditingBill(false);setBillForm({vendor:'',amount:'',description:''});setShowBill(true);}}>
         <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>+ Add Bill</Text>
+      </TouchableOpacity><TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#1C3A4A',borderRadius:12,padding:16,alignItems:'center',marginBottom:24,marginTop:4}} onPress={()=>setShowReports(true)}>
+        <Text style={{color:'#A8C4D4',fontSize:16,fontWeight:'600'}}>📊 View Reports</Text>
       </TouchableOpacity>
 
       {invoices.length > 0 && (
@@ -559,6 +561,62 @@ export default function HomeScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
-    </ScrollView>
+    <Modal visible={showReports} animationType="slide" presentationStyle="pageSheet">
+        <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
+          <View style={{padding:24,paddingTop:60}}>
+            <TouchableOpacity onPress={()=>setShowReports(false)} style={{marginBottom:24}}>
+              <Text style={{color:'#A8D4A8',fontSize:16}}>Close</Text>
+            </TouchableOpacity>
+            <Text style={{color:'#fff',fontSize:28,fontWeight:'700',marginBottom:4}}>Reports</Text>
+            <Text style={{color:'#7A9A7A',fontSize:14,marginBottom:32}}>Financial summary</Text>
+
+            <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12}}>INCOME</Text>
+            <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:12}}>
+              <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:12}}>
+                <Text style={{color:'#7A9A7A',fontSize:14}}>Total Invoiced</Text>
+                <Text style={{color:'#A8D4A8',fontSize:14,fontWeight:'600'}}>{fmt(invoices.reduce((s,i)=>s+Number(i.total),0))}</Text>
+              </View>
+              <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:12}}>
+                <Text style={{color:'#7A9A7A',fontSize:14}}>Total Paid</Text>
+                <Text style={{color:'#A8D4A8',fontSize:14,fontWeight:'600'}}>{fmt(invoices.filter(i=>i.status==='paid').reduce((s,i)=>s+Number(i.total),0))}</Text>
+              </View>
+              <View style={{flexDirection:'row',justifyContent:'space-between'}}>
+                <Text style={{color:'#7A9A7A',fontSize:14}}>Outstanding</Text>
+                <Text style={{color:'#ffd166',fontSize:14,fontWeight:'600'}}>{fmt(invoices.filter(i=>i.status!=='paid').reduce((s,i)=>s+Number(i.total),0))}</Text>
+              </View>
+            </View>
+
+            <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12,marginTop:8}}>EXPENSES</Text>
+            <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:12}}>
+              <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:12}}>
+                <Text style={{color:'#7A9A7A',fontSize:14}}>Total Expenses</Text>
+                <Text style={{color:'#D4A8A8',fontSize:14,fontWeight:'600'}}>{fmt(expenses.reduce((s,e)=>s+Number(e.amount),0))}</Text>
+              </View>
+              <View style={{flexDirection:'row',justifyContent:'space-between'}}>
+                <Text style={{color:'#7A9A7A',fontSize:14}}>Total Bills</Text>
+                <Text style={{color:'#D4A8A8',fontSize:14,fontWeight:'600'}}>{fmt(bills.reduce((s,b)=>s+Number(b.amount),0))}</Text>
+              </View>
+            </View>
+
+            <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12,marginTop:8}}>SUMMARY</Text>
+            <View style={{backgroundColor:'#1a3a2a',borderRadius:12,padding:20,marginBottom:24,borderWidth:1,borderColor:'#2D4A35'}}>
+              <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:12}}>
+                <Text style={{color:'#7A9A7A',fontSize:14}}>Total Revenue (Paid)</Text>
+                <Text style={{color:'#A8D4A8',fontSize:14,fontWeight:'600'}}>{fmt(invoices.filter(i=>i.status==='paid').reduce((s,i)=>s+Number(i.total),0))}</Text>
+              </View>
+              <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:12}}>
+                <Text style={{color:'#7A9A7A',fontSize:14}}>Total Expenses</Text>
+                <Text style={{color:'#D4A8A8',fontSize:14,fontWeight:'600'}}>-{fmt(expenses.reduce((s,e)=>s+Number(e.amount),0))}</Text>
+              </View>
+              <View style={{height:1,backgroundColor:'#2D4A35',marginBottom:12}}/>
+              <View style={{flexDirection:'row',justifyContent:'space-between'}}>
+                <Text style={{color:'#fff',fontSize:16,fontWeight:'700'}}>Net Income</Text>
+                <Text style={{color:'#ffd166',fontSize:16,fontWeight:'700'}}>{fmt(invoices.filter(i=>i.status==='paid').reduce((s,i)=>s+Number(i.total),0) - expenses.reduce((s,e)=>s+Number(e.amount),0))}</Text>
+              </View>
+            </View>
+
+          </View>
+        </ScrollView>
+      </Modal></ScrollView>
   );
 }
