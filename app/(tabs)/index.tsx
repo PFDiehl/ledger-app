@@ -26,6 +26,8 @@ export default function HomeScreen() {
   const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'' });
   const [billForm, setBillForm] = useState({ vendor:'', amount:'', description:'' });
   const [regForm, setRegForm] = useState({ fullName:'', orgName:'', email:'', password:'' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState(false);
   const [editingExpense, setEditingExpense] = useState(false);
   const [editingBill, setEditingBill] = useState(false);
@@ -208,7 +210,12 @@ export default function HomeScreen() {
           <Text style={{fontSize:32,fontWeight:'700',color:'#A8D4A8',marginBottom:8}}>Ledger</Text>
           <Text style={{fontSize:14,color:'#7A9A7A',marginBottom:40}}>Built for where you are going</Text>
           <TextInput style={{width:'100%',backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:12}} placeholder="Email" placeholderTextColor="#7A9A7A" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-          <TextInput style={{width:'100%',backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:20}} placeholder="Password" placeholderTextColor="#7A9A7A" value={password} onChangeText={setPassword} secureTextEntry />
+          <View style={{width:'100%',marginBottom:20}}>
+  <TextInput style={{width:'100%',backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,paddingRight:60}} placeholder="Password" placeholderTextColor="#7A9A7A" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} />
+  <TouchableOpacity onPress={()=>setShowPassword(p=>!p)} style={{position:'absolute',right:16,top:16}}>
+    <Text style={{color:'#7A9A7A',fontSize:14}}>{showPassword ? 'Hide' : 'Show'}</Text>
+  </TouchableOpacity>
+</View>placeholderTextColor="#7A9A7A" value={password} onChangeText={setPassword} secureTextEntry />
           <TouchableOpacity style={{width:'100%',backgroundColor:'#A8D4A8',borderRadius:12,padding:16,alignItems:'center'}} onPress={login}>
             <Text style={{fontSize:16,fontWeight:'600',color:'#2D4A35'}}>Sign in</Text>
           </TouchableOpacity>
@@ -237,7 +244,12 @@ export default function HomeScreen() {
               <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>EMAIL</Text>
               <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:16,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.email} onChangeText={v=>setRegForm(f=>({...f,email:v}))} placeholder="you@company.com" placeholderTextColor="#7A9A7A" keyboardType="email-address" autoCapitalize="none" />
               <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>PASSWORD</Text>
-              <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:16,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.password} onChangeText={v=>setRegForm(f=>({...f,password:v}))} placeholder="Min 8 characters" placeholderTextColor="#7A9A7A" secureTextEntry />
+             <View style={{width:'100%',marginBottom:16}}>
+  <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,paddingRight:60,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.password} onChangeText={v=>setRegForm(f=>({...f,password:v}))} placeholder="Min 8 characters" placeholderTextColor="#7A9A7A" secureTextEntry={!showRegPassword} />
+  <TouchableOpacity onPress={()=>setShowRegPassword(p=>!p)} style={{position:'absolute',right:16,top:16}}>
+    <Text style={{color:'#7A9A7A',fontSize:14}}>{showRegPassword ? 'Hide' : 'Show'}</Text>
+  </TouchableOpacity>
+</View>
               <View style={{height:16}} />
               <TouchableOpacity style={{backgroundColor:'#A8D4A8',borderRadius:12,padding:16,alignItems:'center'}} onPress={register}>
                 <Text style={{fontSize:16,fontWeight:'600',color:'#2D4A35'}}>Create Account</Text>
