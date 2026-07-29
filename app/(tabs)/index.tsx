@@ -170,6 +170,17 @@ export default function HomeScreen() {
     );
   }
 
+  async function sendInvoice(id) {
+    try {
+      const r = await fetch(API+'/orgs/'+org.id+'/invoices/'+id+'/send', {
+        method:'POST', headers:{'Authorization':'Bearer '+token}
+      });
+      const j = await r.json();
+      if (j.success) { Alert.alert('Sent!', 'Invoice emailed to client'); loadInvoices(org.id, token); }
+      else Alert.alert('Error', j.message || 'Failed to send');
+    } catch(e) { Alert.alert('Error', 'Cannot connect'); }
+  }
+
   async function deleteInvoice(id) {
     Alert.alert('Delete Invoice', 'Are you sure?', [
       { text:'Cancel', style:'cancel' },
@@ -421,6 +432,10 @@ export default function HomeScreen() {
                       <Text style={{color:'#ffd166',fontSize:13,fontWeight:'600'}}>Partial Payment</Text>
                     </TouchableOpacity>
                   </View>
+                )}{selectedInvoice.status !== 'paid' && (
+                  <TouchableOpacity onPress={()=>sendInvoice(selectedInvoice.id)} style={{backgroundColor:'#1a2a4a',borderRadius:8,padding:12,alignItems:'center',marginBottom:16,marginTop:8}}>
+                    <Text style={{color:'#A8C4D4',fontSize:13,fontWeight:'600'}}>Send Invoice by Email</Text>
+                  </TouchableOpacity>
                 )}
                 <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:16}}>
                   <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>CLIENT</Text>
@@ -651,3 +666,4 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
