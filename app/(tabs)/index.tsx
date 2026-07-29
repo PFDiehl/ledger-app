@@ -18,6 +18,7 @@ export default function HomeScreen() {
   const [showExpenseDetail, setShowExpenseDetail] = useState(false);
   const [showBillDetail, setShowBillDetail] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [showReports, setShowReports] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [selectedBill, setSelectedBill] = useState(null);
@@ -30,7 +31,7 @@ export default function HomeScreen() {
   const [regForm, setRegForm] = useState({ fullName:'', orgName:'', email:'', password:'' });
   const [editingInvoice, setEditingInvoice] = useState(false);
   const [editingExpense, setEditingExpense] = useState(false);
-  const [editingBill, setEditingBill] = useState(false);const [showReports, setShowReports] = useState(false);
+  const [editingBill, setEditingBill] = useState(false);
 
   async function login() {
     try {
@@ -149,6 +150,26 @@ export default function HomeScreen() {
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
   }
 
+  async function recordPartialPayment(inv) {
+    Alert.prompt('Partial Payment', 'Enter amount (Invoice total: '+fmt(inv.total)+')',
+      [
+        { text:'Cancel', style:'cancel' },
+        { text:'Record', onPress: async (amount) => {
+          if (!amount || isNaN(Number(amount))) return Alert.alert('Error', 'Enter a valid amount');
+          try {
+            const r = await fetch(API+'/orgs/'+org.id+'/invoices/'+inv.id, {
+              method:'PATCH', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+              body:JSON.stringify({status:'partial'})
+            });
+            const j = await r.json();
+            if (j.success) { setShowDetail(false); loadInvoices(org.id, token); Alert.alert('Recorded!', 'Payment of '+fmt(Number(amount))+' recorded'); }
+            else Alert.alert('Error', j.message || 'Failed');
+          } catch(e) { Alert.alert('Error', 'Cannot connect'); }
+        }}
+      ], 'plain-text', '', 'decimal-pad'
+    );
+  }
+
   async function deleteInvoice(id) {
     Alert.alert('Delete Invoice', 'Are you sure?', [
       { text:'Cancel', style:'cancel' },
@@ -201,7 +222,7 @@ export default function HomeScreen() {
 
   function editExpense(exp) {
     setSelectedExpense(exp);
-    setExpenseForm({ vendor: exp.vendor||'', amount: exp.amount||'', description: exp.description||'' });
+    setExpenseForm({ vendor: exp.vendor||'', amount: String(exp.amount)||'', description: exp.description||'' });
     setEditingExpense(true);
     setShowExpenseDetail(false);
     setShowExpense(true);
@@ -209,13 +230,19 @@ export default function HomeScreen() {
 
   function editBill(bill) {
     setSelectedBill(bill);
-    setBillForm({ vendor: bill.vendor||'', amount: bill.amount||'', description: bill.description||'' });
+    setBillForm({ vendor: bill.vendor||'', amount: String(bill.amount)||'', description: bill.description||'' });
     setEditingBill(true);
     setShowBillDetail(false);
     setShowBill(true);
   }
 
   function fmt(n) { return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2}); }
+
+  const totalPaid = invoices.filter(i=>i.status==='paid').reduce((s,i)=>s+Number(i.total),0);
+  const totalOutstanding = invoices.filter(i=>i.status!=='paid').reduce((s,i)=>s+Number(i.total),0);
+  const totalExpensesAmt = expenses.reduce((s,e)=>s+Number(e.amount),0);
+  const totalBillsAmt = bills.reduce((s,b)=>s+Number(b.amount),0);
+  const netIncome = totalPaid - totalExpensesAmt;
 
   if (!user) {
     return (
@@ -310,10 +337,11 @@ export default function HomeScreen() {
       <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingExpense(false);setExpenseForm({vendor:'',amount:'',description:''});setShowExpense(true);}}>
         <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>+ Add Expense</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#4A3D2D',borderRadius:12,padding:16,alignItems:'center',marginBottom:24}} onPress={()=>{setEditingBill(false);setBillForm({vendor:'',amount:'',description:''});setShowBill(true);}}>
+      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#4A3D2D',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingBill(false);setBillForm({vendor:'',amount:'',description:''});setShowBill(true);}}>
         <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>+ Add Bill</Text>
-      </TouchableOpacity><TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#1C3A4A',borderRadius:12,padding:16,alignItems:'center',marginBottom:24,marginTop:4}} onPress={()=>setShowReports(true)}>
-        <Text style={{color:'#A8C4D4',fontSize:16,fontWeight:'600'}}>📊 View Reports</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#1C3A4A',borderRadius:12,padding:16,alignItems:'center',marginBottom:24}} onPress={()=>setShowReports(true)}>
+        <Text style={{color:'#A8C4D4',fontSize:16,fontWeight:'600'}}>View Reports</Text>
       </TouchableOpacity>
 
       {invoices.length > 0 && (
@@ -385,9 +413,14 @@ export default function HomeScreen() {
                 <Text style={{color:'#fff',fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedInvoice.invoiceNumber}</Text>
                 <Text style={{color:'#7A9A7A',fontSize:14,marginBottom:12,textTransform:'capitalize'}}>{selectedInvoice.status}</Text>
                 {selectedInvoice.status !== 'paid' && (
-                  <TouchableOpacity onPress={()=>markInvoicePaid(selectedInvoice.id)} style={{backgroundColor:'#1a4a2a',borderRadius:8,padding:12,alignItems:'center',marginBottom:16}}>
-                    <Text style={{color:'#A8D4A8',fontSize:14,fontWeight:'600'}}>Mark as Paid</Text>
-                  </TouchableOpacity>
+                  <View style={{flexDirection:'row',gap:8,marginBottom:16}}>
+                    <TouchableOpacity onPress={()=>markInvoicePaid(selectedInvoice.id)} style={{flex:1,backgroundColor:'#1a4a2a',borderRadius:8,padding:12,alignItems:'center'}}>
+                      <Text style={{color:'#A8D4A8',fontSize:13,fontWeight:'600'}}>Mark as Paid</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={()=>recordPartialPayment(selectedInvoice)} style={{flex:1,backgroundColor:'#2D3A1A',borderRadius:8,padding:12,alignItems:'center'}}>
+                      <Text style={{color:'#ffd166',fontSize:13,fontWeight:'600'}}>Partial Payment</Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
                 <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:16}}>
                   <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>CLIENT</Text>
@@ -561,7 +594,8 @@ export default function HomeScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
-    <Modal visible={showReports} animationType="slide" presentationStyle="pageSheet">
+
+      <Modal visible={showReports} animationType="slide" presentationStyle="pageSheet">
         <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <View style={{padding:24,paddingTop:60}}>
             <TouchableOpacity onPress={()=>setShowReports(false)} style={{marginBottom:24}}>
@@ -569,7 +603,6 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <Text style={{color:'#fff',fontSize:28,fontWeight:'700',marginBottom:4}}>Reports</Text>
             <Text style={{color:'#7A9A7A',fontSize:14,marginBottom:32}}>Financial summary</Text>
-
             <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12}}>INCOME</Text>
             <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:12}}>
               <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:12}}>
@@ -585,7 +618,6 @@ export default function HomeScreen() {
                 <Text style={{color:'#ffd166',fontSize:14,fontWeight:'600'}}>{fmt(invoices.filter(i=>i.status!=='paid').reduce((s,i)=>s+Number(i.total),0))}</Text>
               </View>
             </View>
-
             <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12,marginTop:8}}>EXPENSES</Text>
             <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:12}}>
               <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:12}}>
@@ -597,7 +629,6 @@ export default function HomeScreen() {
                 <Text style={{color:'#D4A8A8',fontSize:14,fontWeight:'600'}}>{fmt(bills.reduce((s,b)=>s+Number(b.amount),0))}</Text>
               </View>
             </View>
-
             <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12,marginTop:8}}>SUMMARY</Text>
             <View style={{backgroundColor:'#1a3a2a',borderRadius:12,padding:20,marginBottom:24,borderWidth:1,borderColor:'#2D4A35'}}>
               <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:12}}>
@@ -606,7 +637,7 @@ export default function HomeScreen() {
               </View>
               <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:12}}>
                 <Text style={{color:'#7A9A7A',fontSize:14}}>Total Expenses</Text>
-                <Text style={{color:'#D4A8A8',fontSize:14,fontWeight:'600'}}>-{fmt(expenses.reduce((s,e)=>s+Number(e.amount),0))}</Text>
+                <Text style={{color:'#D4A8A8',fontSize:14,fontWeight:'600'}}>{fmt(expenses.reduce((s,e)=>s+Number(e.amount),0))}</Text>
               </View>
               <View style={{height:1,backgroundColor:'#2D4A35',marginBottom:12}}/>
               <View style={{flexDirection:'row',justifyContent:'space-between'}}>
@@ -614,9 +645,9 @@ export default function HomeScreen() {
                 <Text style={{color:'#ffd166',fontSize:16,fontWeight:'700'}}>{fmt(invoices.filter(i=>i.status==='paid').reduce((s,i)=>s+Number(i.total),0) - expenses.reduce((s,e)=>s+Number(e.amount),0))}</Text>
               </View>
             </View>
-
           </View>
         </ScrollView>
-      </Modal></ScrollView>
+      </Modal>
+    </ScrollView>
   );
 }
