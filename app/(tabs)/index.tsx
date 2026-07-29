@@ -6,6 +6,8 @@ const API = 'https://ledger-accounting-production.up.railway.app/api';
 export default function HomeScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
   const [user, setUser] = useState(null);
   const [org, setOrg] = useState(null);
   const [token, setToken] = useState(null);
@@ -26,8 +28,6 @@ export default function HomeScreen() {
   const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'' });
   const [billForm, setBillForm] = useState({ vendor:'', amount:'', description:'' });
   const [regForm, setRegForm] = useState({ fullName:'', orgName:'', email:'', password:'' });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showRegPassword, setShowRegPassword] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState(false);
   const [editingExpense, setEditingExpense] = useState(false);
   const [editingBill, setEditingBill] = useState(false);
@@ -134,6 +134,21 @@ export default function HomeScreen() {
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
   }
 
+  async function markInvoicePaid(id) {
+    try {
+      const r = await fetch(API+'/orgs/'+org.id+'/invoices/'+id, {
+        method:'PATCH', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body:JSON.stringify({status:'paid'})
+      });
+      const j = await r.json();
+      if (j.success) {
+        setShowDetail(false);
+        loadInvoices(org.id, token);
+        Alert.alert('Paid!', 'Invoice marked as paid');
+      } else Alert.alert('Error', j.message || 'Failed');
+    } catch(e) { Alert.alert('Error', 'Cannot connect'); }
+  }
+
   async function deleteInvoice(id) {
     Alert.alert('Delete Invoice', 'Are you sure?', [
       { text:'Cancel', style:'cancel' },
@@ -211,11 +226,11 @@ export default function HomeScreen() {
           <Text style={{fontSize:14,color:'#7A9A7A',marginBottom:40}}>Built for where you are going</Text>
           <TextInput style={{width:'100%',backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:12}} placeholder="Email" placeholderTextColor="#7A9A7A" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
           <View style={{width:'100%',marginBottom:20}}>
-  <TextInput style={{width:'100%',backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,paddingRight:60}} placeholder="Password" placeholderTextColor="#7A9A7A" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} />
-  <TouchableOpacity onPress={()=>setShowPassword(p=>!p)} style={{position:'absolute',right:16,top:16}}>
-    <Text style={{color:'#7A9A7A',fontSize:14}}>{showPassword ? 'Hide' : 'Show'}</Text>
-  </TouchableOpacity>
-</View>placeholderTextColor="#7A9A7A" value={password} onChangeText={setPassword} secureTextEntry />
+            <TextInput style={{width:'100%',backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,paddingRight:60}} placeholder="Password" placeholderTextColor="#7A9A7A" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} />
+            <TouchableOpacity onPress={()=>setShowPassword(p=>!p)} style={{position:'absolute',right:16,top:16}}>
+              <Text style={{color:'#7A9A7A',fontSize:14}}>{showPassword ? 'Hide' : 'Show'}</Text>
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity style={{width:'100%',backgroundColor:'#A8D4A8',borderRadius:12,padding:16,alignItems:'center'}} onPress={login}>
             <Text style={{fontSize:16,fontWeight:'600',color:'#2D4A35'}}>Sign in</Text>
           </TouchableOpacity>
@@ -244,12 +259,12 @@ export default function HomeScreen() {
               <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>EMAIL</Text>
               <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:16,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.email} onChangeText={v=>setRegForm(f=>({...f,email:v}))} placeholder="you@company.com" placeholderTextColor="#7A9A7A" keyboardType="email-address" autoCapitalize="none" />
               <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>PASSWORD</Text>
-             <View style={{width:'100%',marginBottom:16}}>
-  <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,paddingRight:60,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.password} onChangeText={v=>setRegForm(f=>({...f,password:v}))} placeholder="Min 8 characters" placeholderTextColor="#7A9A7A" secureTextEntry={!showRegPassword} />
-  <TouchableOpacity onPress={()=>setShowRegPassword(p=>!p)} style={{position:'absolute',right:16,top:16}}>
-    <Text style={{color:'#7A9A7A',fontSize:14}}>{showRegPassword ? 'Hide' : 'Show'}</Text>
-  </TouchableOpacity>
-</View>
+              <View style={{width:'100%',marginBottom:16}}>
+                <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,paddingRight:60,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.password} onChangeText={v=>setRegForm(f=>({...f,password:v}))} placeholder="Min 8 characters" placeholderTextColor="#7A9A7A" secureTextEntry={!showRegPassword} />
+                <TouchableOpacity onPress={()=>setShowRegPassword(p=>!p)} style={{position:'absolute',right:16,top:16}}>
+                  <Text style={{color:'#7A9A7A',fontSize:14}}>{showRegPassword ? 'Hide' : 'Show'}</Text>
+                </TouchableOpacity>
+              </View>
               <View style={{height:16}} />
               <TouchableOpacity style={{backgroundColor:'#A8D4A8',borderRadius:12,padding:16,alignItems:'center'}} onPress={register}>
                 <Text style={{fontSize:16,fontWeight:'600',color:'#2D4A35'}}>Create Account</Text>
@@ -309,7 +324,7 @@ export default function HomeScreen() {
                 <Text style={{color:'#7A9A7A',fontSize:12,marginTop:2}}>{inv.invoiceNumber}</Text>
               </View>
               <View style={{alignItems:'flex-end'}}>
-                <Text style={{color:'#A8D4A8',fontWeight:'600'}}>{fmt(inv.total)}</Text>
+                <Text style={{color: inv.status==='paid' ? '#A8D4A8' : '#ffd166',fontWeight:'600'}}>{fmt(inv.total)}</Text>
                 <Text style={{color:'#7A9A7A',fontSize:11,marginTop:2,textTransform:'capitalize'}}>{inv.status}</Text>
               </View>
             </TouchableOpacity>
@@ -366,7 +381,12 @@ export default function HomeScreen() {
             {selectedInvoice && (
               <View>
                 <Text style={{color:'#fff',fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedInvoice.invoiceNumber}</Text>
-                <Text style={{color:'#7A9A7A',fontSize:14,marginBottom:24,textTransform:'capitalize'}}>{selectedInvoice.status}</Text>
+                <Text style={{color:'#7A9A7A',fontSize:14,marginBottom:12,textTransform:'capitalize'}}>{selectedInvoice.status}</Text>
+                {selectedInvoice.status !== 'paid' && (
+                  <TouchableOpacity onPress={()=>markInvoicePaid(selectedInvoice.id)} style={{backgroundColor:'#1a4a2a',borderRadius:8,padding:12,alignItems:'center',marginBottom:16}}>
+                    <Text style={{color:'#A8D4A8',fontSize:14,fontWeight:'600'}}>Mark as Paid</Text>
+                  </TouchableOpacity>
+                )}
                 <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:16}}>
                   <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>CLIENT</Text>
                   <Text style={{color:'#fff',fontSize:16,fontWeight:'500'}}>{selectedInvoice.contact?.name || 'N/A'}</Text>
