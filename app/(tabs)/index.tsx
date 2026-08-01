@@ -185,7 +185,7 @@ export default function HomeScreen() {
   }
 
   async function sendInvoice(id) {
-    Alert.alert('Send Invoice', 'Send this invoice by email to the client?', [
+    Alert.alert('Send Invoice', 'Send to ' + (selectedInvoice?.contact?.email || 'client') + '?', [
       { text:'Cancel', style:'cancel' },
       { text:'Send', onPress: async () => {
         try {
