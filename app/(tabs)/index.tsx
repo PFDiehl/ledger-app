@@ -25,7 +25,8 @@ export default function HomeScreen() {
   const [invoices, setInvoices] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [bills, setBills] = useState([]);
-  const [form, setForm] = useState({ clientName:'', clientEmail:'', description:'', quantity:'1', price:'' });
+  const [lines, setLines] = useState([{ description:'', quantity:'1', unitPrice:'' }]);
+  const [invoiceForm, setInvoiceForm] = useState({ clientName:'', clientEmail:'', poNumber:'', notes:'', taxRate:'', shipping:'', discount:'' });
   const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'' });
   const [billForm, setBillForm] = useState({ vendor:'', amount:'', description:'' });
   const [regForm, setRegForm] = useState({ fullName:'', orgName:'', email:'', password:'' });
@@ -87,16 +88,32 @@ export default function HomeScreen() {
     } catch(e) {}
   }
 
+  function addLine() { setLines(l => [...l, { description:'', quantity:'1', unitPrice:'' }]); }
+  function removeLine(i) { setLines(l => l.filter((_, idx) => idx !== i)); }
+  function updateLine(i, field, value) { setLines(l => l.map((line, idx) => idx === i ? {...line, [field]: value} : line)); }
+
+  const invoiceTotal = () => {
+    const sub = lines.reduce((s, l) => s + (Number(l.quantity||0) * Number(l.unitPrice||0)), 0);
+    const tax = sub * (Number(invoiceForm.taxRate||0) / 100);
+    return sub + tax + Number(invoiceForm.shipping||0) - Number(invoiceForm.discount||0);
+  };
+
   async function saveInvoice() {
-    if (!form.clientName || !form.price) return Alert.alert('Error', 'Fill in client name and price');
+    if (!invoiceForm.clientName) return Alert.alert('Error', 'Enter client name');
+    if (lines.some(l => !l.description || !l.unitPrice)) return Alert.alert('Error', 'Fill in all line items');
     try {
       const method = editingInvoice ? 'PATCH' : 'POST';
       const url = editingInvoice ? API+'/orgs/'+org.id+'/invoices/'+selectedInvoice.id : API+'/orgs/'+org.id+'/invoices';
-      const r = await fetch(url, { method, headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify(form) });
+      const r = await fetch(url, {
+        method,
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body:JSON.stringify({ ...invoiceForm, lines })
+      });
       const j = await r.json();
       if (j.success) {
         setShowInvoice(false); setEditingInvoice(false);
-        setForm({ clientName:'', clientEmail:'', description:'', quantity:'1', price:'' });
+        setInvoiceForm({ clientName:'', clientEmail:'', poNumber:'', notes:'', taxRate:'', shipping:'', discount:'' });
+        setLines([{ description:'', quantity:'1', unitPrice:'' }]);
         loadInvoices(org.id, token);
         Alert.alert('Saved!', editingInvoice ? 'Invoice updated' : 'Invoice created');
       } else Alert.alert('Error', j.message || 'Failed');
@@ -142,11 +159,8 @@ export default function HomeScreen() {
         body:JSON.stringify({status:'paid'})
       });
       const j = await r.json();
-      if (j.success) {
-        setShowDetail(false);
-        loadInvoices(org.id, token);
-        Alert.alert('Paid!', 'Invoice marked as paid');
-      } else Alert.alert('Error', j.message || 'Failed');
+      if (j.success) { setShowDetail(false); loadInvoices(org.id, token); Alert.alert('Paid!', 'Invoice marked as paid'); }
+      else Alert.alert('Error', j.message || 'Failed');
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
   }
 
@@ -171,14 +185,19 @@ export default function HomeScreen() {
   }
 
   async function sendInvoice(id) {
-    try {
-      const r = await fetch(API+'/orgs/'+org.id+'/invoices/'+id+'/send', {
-        method:'POST', headers:{'Authorization':'Bearer '+token}
-      });
-      const j = await r.json();
-      if (j.success) { Alert.alert('Sent!', 'Invoice emailed to client'); loadInvoices(org.id, token); }
-      else Alert.alert('Error', j.message || 'Failed to send');
-    } catch(e) { Alert.alert('Error', 'Cannot connect'); }
+    Alert.alert('Send Invoice', 'Send this invoice by email to the client?', [
+      { text:'Cancel', style:'cancel' },
+      { text:'Send', onPress: async () => {
+        try {
+          const r = await fetch(API+'/orgs/'+org.id+'/invoices/'+id+'/send', {
+            method:'POST', headers:{'Authorization':'Bearer '+token}
+          });
+          const j = await r.json();
+          if (j.success) { Alert.alert('Sent!', 'Invoice emailed to client'); loadInvoices(org.id, token); }
+          else Alert.alert('Error', j.message || 'Failed to send');
+        } catch(e) { Alert.alert('Error', 'Cannot connect'); }
+      }}
+    ]);
   }
 
   async function deleteInvoice(id) {
@@ -225,7 +244,8 @@ export default function HomeScreen() {
 
   function editInvoice(inv) {
     setSelectedInvoice(inv);
-    setForm({ clientName: inv.contact?.name||'', clientEmail: inv.contact?.email||'', description: inv.notes||'', quantity:'1', price: inv.total||'' });
+    setInvoiceForm({ clientName: inv.contact?.name||'', clientEmail: inv.contact?.email||'', poNumber: inv.poNumber||'', notes: inv.notes||'', taxRate: inv.taxRate||'', shipping: inv.shipping||'', discount: inv.discount||'' });
+    setLines(inv.lines?.length ? inv.lines.map(l => ({ description: l.description, quantity: String(l.quantity), unitPrice: String(l.unitPrice) })) : [{ description:'', quantity:'1', unitPrice:'' }]);
     setEditingInvoice(true);
     setShowDetail(false);
     setShowInvoice(true);
@@ -247,13 +267,7 @@ export default function HomeScreen() {
     setShowBill(true);
   }
 
-  function fmt(n) { return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2}); }
-
-  const totalPaid = invoices.filter(i=>i.status==='paid').reduce((s,i)=>s+Number(i.total),0);
-  const totalOutstanding = invoices.filter(i=>i.status!=='paid').reduce((s,i)=>s+Number(i.total),0);
-  const totalExpensesAmt = expenses.reduce((s,e)=>s+Number(e.amount),0);
-  const totalBillsAmt = bills.reduce((s,b)=>s+Number(b.amount),0);
-  const netIncome = totalPaid - totalExpensesAmt;
+  function fmt(n) { return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2}); }
 
   if (!user) {
     return (
@@ -342,7 +356,7 @@ export default function HomeScreen() {
           <Text style={{color:'#7A9A7A',fontSize:11,marginTop:4}}>{expenses.length} expenses</Text>
         </View>
       </View>
-      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#2D4A35',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingInvoice(false);setForm({clientName:'',clientEmail:'',description:'',quantity:'1',price:''});setShowInvoice(true);}}>
+      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#2D4A35',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingInvoice(false);setInvoiceForm({clientName:'',clientEmail:'',poNumber:'',notes:'',taxRate:'',shipping:'',discount:''});setLines([{description:'',quantity:'1',unitPrice:''}]);setShowInvoice(true);}}>
         <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>+ New Invoice</Text>
       </TouchableOpacity>
       <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingExpense(false);setExpenseForm({vendor:'',amount:'',description:''});setShowExpense(true);}}>
@@ -403,6 +417,7 @@ export default function HomeScreen() {
         </View>
       )}
 
+      {/* Invoice Detail Modal */}
       <Modal visible={showDetail} animationType="slide" presentationStyle="pageSheet">
         <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <View style={{padding:24,paddingTop:60}}>
@@ -432,16 +447,44 @@ export default function HomeScreen() {
                       <Text style={{color:'#ffd166',fontSize:13,fontWeight:'600'}}>Partial Payment</Text>
                     </TouchableOpacity>
                   </View>
-                )}{selectedInvoice.status !== 'paid' && (
-                  <TouchableOpacity onPress={()=>sendInvoice(selectedInvoice.id)} style={{backgroundColor:'#1a2a4a',borderRadius:8,padding:12,alignItems:'center',marginBottom:16,marginTop:8}}>
+                )}
+                {selectedInvoice.status !== 'paid' && (
+                  <TouchableOpacity onPress={()=>sendInvoice(selectedInvoice.id)} style={{backgroundColor:'#1a2a4a',borderRadius:8,padding:12,alignItems:'center',marginBottom:16}}>
                     <Text style={{color:'#A8C4D4',fontSize:13,fontWeight:'600'}}>Send Invoice by Email</Text>
                   </TouchableOpacity>
                 )}
                 <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:16}}>
                   <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>CLIENT</Text>
                   <Text style={{color:'#fff',fontSize:16,fontWeight:'500'}}>{selectedInvoice.contact?.name || 'N/A'}</Text>
+                  {selectedInvoice.contact?.email ? <Text style={{color:'#7A9A7A',fontSize:13,marginTop:2}}>{selectedInvoice.contact.email}</Text> : null}
                 </View>
+                {selectedInvoice.lines?.length > 0 && (
+                  <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:16}}>
+                    <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:12}}>LINE ITEMS</Text>
+                    {selectedInvoice.lines.map((l, i) => (
+                      <View key={i} style={{flexDirection:'row',justifyContent:'space-between',marginBottom:8}}>
+                        <View style={{flex:1}}>
+                          <Text style={{color:'#fff',fontSize:14}}>{l.description}</Text>
+                          <Text style={{color:'#7A9A7A',fontSize:12}}>{l.quantity} x {fmt(l.unitPrice)}</Text>
+                        </View>
+                        <Text style={{color:'#A8D4A8',fontSize:14,fontWeight:'600'}}>{fmt(l.amount)}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
                 <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:16}}>
+                  {Number(selectedInvoice.taxAmount||0) > 0 && (
+                    <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:8}}>
+                      <Text style={{color:'#7A9A7A',fontSize:14}}>Tax</Text>
+                      <Text style={{color:'#fff',fontSize:14}}>{fmt(selectedInvoice.taxAmount)}</Text>
+                    </View>
+                  )}
+                  {Number(selectedInvoice.shipping||0) > 0 && (
+                    <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:8}}>
+                      <Text style={{color:'#7A9A7A',fontSize:14}}>Shipping</Text>
+                      <Text style={{color:'#fff',fontSize:14}}>{fmt(selectedInvoice.shipping)}</Text>
+                    </View>
+                  )}
                   <View style={{flexDirection:'row',justifyContent:'space-between'}}>
                     <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Total</Text>
                     <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>{fmt(selectedInvoice.total)}</Text>
@@ -453,6 +496,7 @@ export default function HomeScreen() {
         </ScrollView>
       </Modal>
 
+      {/* Expense Detail Modal */}
       <Modal visible={showExpenseDetail} animationType="slide" presentationStyle="pageSheet">
         <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <View style={{padding:24,paddingTop:60}}>
@@ -489,6 +533,7 @@ export default function HomeScreen() {
         </ScrollView>
       </Modal>
 
+      {/* Bill Detail Modal */}
       <Modal visible={showBillDetail} animationType="slide" presentationStyle="pageSheet">
         <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <View style={{padding:24,paddingTop:60}}>
@@ -525,6 +570,7 @@ export default function HomeScreen() {
         </ScrollView>
       </Modal>
 
+      {/* New Invoice Modal */}
       <Modal visible={showInvoice} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
@@ -537,29 +583,76 @@ export default function HomeScreen() {
                 <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Save</Text>
               </TouchableOpacity>
             </View>
+
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>CLIENT NAME</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={form.clientName} onChangeText={v=>setForm(f=>({...f,clientName:v}))} placeholder="Acme Corp" placeholderTextColor="#7A9A7A" />
+            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={invoiceForm.clientName} onChangeText={v=>setInvoiceForm(f=>({...f,clientName:v}))} placeholder="Acme Corp" placeholderTextColor="#7A9A7A" />
+
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>CLIENT EMAIL</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={form.clientEmail} onChangeText={v=>setForm(f=>({...f,clientEmail:v}))} placeholder="client@example.com" placeholderTextColor="#7A9A7A" keyboardType="email-address" autoCapitalize="none" />
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DESCRIPTION</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={form.description} onChangeText={v=>setForm(f=>({...f,description:v}))} placeholder="Services rendered" placeholderTextColor="#7A9A7A" />
-            <View style={{flexDirection:'row',gap:12,marginBottom:16}}>
-              <View style={{flex:1}}>
-                <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>QUANTITY</Text>
-                <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,borderWidth:1,borderColor:'#3D5A45'}} value={form.quantity} onChangeText={v=>setForm(f=>({...f,quantity:v}))} keyboardType="numeric" />
+            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={invoiceForm.clientEmail} onChangeText={v=>setInvoiceForm(f=>({...f,clientEmail:v}))} placeholder="client@example.com" placeholderTextColor="#7A9A7A" keyboardType="email-address" autoCapitalize="none" />
+
+            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>PO / WORK ORDER NUMBER (OPTIONAL)</Text>
+            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:24,borderWidth:1,borderColor:'#3D5A45'}} value={invoiceForm.poNumber} onChangeText={v=>setInvoiceForm(f=>({...f,poNumber:v}))} placeholder="PO-12345" placeholderTextColor="#7A9A7A" />
+
+            <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12}}>LINE ITEMS</Text>
+            {lines.map((line, i) => (
+              <View key={i} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:12,borderWidth:1,borderColor:'#3D5A45'}}>
+                <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+                  <Text style={{color:'#7A9A7A',fontSize:11}}>ITEM {i+1}</Text>
+                  {lines.length > 1 && (
+                    <TouchableOpacity onPress={()=>removeLine(i)}>
+                      <Text style={{color:'#D4A8A8',fontSize:13}}>Remove</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:14,marginBottom:8}} value={line.description} onChangeText={v=>updateLine(i,'description',v)} placeholder="Description" placeholderTextColor="#7A9A7A" />
+                <View style={{flexDirection:'row',gap:8}}>
+                  <View style={{flex:1}}>
+                    <Text style={{color:'#7A9A7A',fontSize:10,marginBottom:4}}>QTY</Text>
+                    <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:14}} value={line.quantity} onChangeText={v=>updateLine(i,'quantity',v)} keyboardType="decimal-pad" />
+                  </View>
+                  <View style={{flex:2}}>
+                    <Text style={{color:'#7A9A7A',fontSize:10,marginBottom:4}}>UNIT PRICE ($)</Text>
+                    <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:14}} value={line.unitPrice} onChangeText={v=>updateLine(i,'unitPrice',v)} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
+                  </View>
+                  <View style={{flex:1.5,justifyContent:'flex-end'}}>
+                    <Text style={{color:'#A8D4A8',fontSize:14,fontWeight:'600',textAlign:'right',padding:12}}>{fmt(Number(line.quantity||0)*Number(line.unitPrice||0))}</Text>
+                  </View>
+                </View>
               </View>
-              <View style={{flex:1}}>
-                <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>PRICE ($)</Text>
-                <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,borderWidth:1,borderColor:'#3D5A45'}} value={form.price} onChangeText={v=>setForm(f=>({...f,price:v}))} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
+            ))}
+            <TouchableOpacity onPress={addLine} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,alignItems:'center',marginBottom:24,borderWidth:1,borderColor:'#3D5A45',borderStyle:'dashed'}}>
+              <Text style={{color:'#A8D4A8',fontSize:14}}>+ Add Line Item</Text>
+            </TouchableOpacity>
+
+            <View style={{backgroundColor:'#2D4A35',borderRadius:10,padding:16,marginBottom:16}}>
+              <View style={{flexDirection:'row',gap:12,marginBottom:12}}>
+                <View style={{flex:1}}>
+                  <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>TAX RATE (%)</Text>
+                  <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:14}} value={invoiceForm.taxRate} onChangeText={v=>setInvoiceForm(f=>({...f,taxRate:v}))} placeholder="0" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
+                </View>
+                <View style={{flex:1}}>
+                  <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>SHIPPING ($)</Text>
+                  <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:14}} value={invoiceForm.shipping} onChangeText={v=>setInvoiceForm(f=>({...f,shipping:v}))} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
+                </View>
+                <View style={{flex:1}}>
+                  <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DISCOUNT ($)</Text>
+                  <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:14}} value={invoiceForm.discount} onChangeText={v=>setInvoiceForm(f=>({...f,discount:v}))} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
+                </View>
+              </View>
+              <View style={{flexDirection:'row',justifyContent:'space-between',paddingTop:12,borderTopWidth:1,borderTopColor:'#3D5A45'}}>
+                <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'700'}}>Total</Text>
+                <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'700'}}>{fmt(invoiceTotal())}</Text>
               </View>
             </View>
-            <TouchableOpacity onPress={()=>{setShowInvoice(false);setEditingInvoice(false);}} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginTop:8}}>
-              <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Cancel</Text>
-            </TouchableOpacity>
+
+            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>NOTES (OPTIONAL)</Text>
+            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:24,borderWidth:1,borderColor:'#3D5A45',minHeight:80}} value={invoiceForm.notes} onChangeText={v=>setInvoiceForm(f=>({...f,notes:v}))} placeholder="Payment terms, special instructions..." placeholderTextColor="#7A9A7A" multiline />
+
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
 
+      {/* Expense Modal */}
       <Modal visible={showExpense} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
@@ -585,6 +678,7 @@ export default function HomeScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
+      {/* Bill Modal */}
       <Modal visible={showBill} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
@@ -610,6 +704,7 @@ export default function HomeScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
+      {/* Reports Modal */}
       <Modal visible={showReports} animationType="slide" presentationStyle="pageSheet">
         <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
           <View style={{padding:24,paddingTop:60}}>
@@ -666,4 +761,3 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
-
