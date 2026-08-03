@@ -19,6 +19,8 @@ export default function HomeScreen() {
   const [showBillDetail, setShowBillDetail] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [showReports, setShowReports] = useState(false);
+  const [showExpenseCategoryPicker, setShowExpenseCategoryPicker] = useState(false);
+  const [showBillCategoryPicker, setShowBillCategoryPicker] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [selectedBill, setSelectedBill] = useState(null);
@@ -27,8 +29,8 @@ export default function HomeScreen() {
   const [bills, setBills] = useState([]);
   const [lines, setLines] = useState([{ description:'', quantity:'1', unitPrice:'' }]);
   const [invoiceForm, setInvoiceForm] = useState({ clientName:'', clientEmail:'', poNumber:'', notes:'', taxRate:'', shipping:'', discount:'' });
-  const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'' });
-  const [billForm, setBillForm] = useState({ vendor:'', amount:'', description:'' });
+  const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'', category:'' });
+  const [billForm, setBillForm] = useState({ vendor:'', amount:'', description:'', category:'' });
   const [regForm, setRegForm] = useState({ fullName:'', orgName:'', email:'', password:'' });
   const [editingInvoice, setEditingInvoice] = useState(false);
   const [editingExpense, setEditingExpense] = useState(false);
@@ -668,13 +670,23 @@ export default function HomeScreen() {
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>VENDOR</Text>
             <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={expenseForm.vendor} onChangeText={v=>setExpenseForm(f=>({...f,vendor:v}))} placeholder="Amazon" placeholderTextColor="#7A9A7A" />
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>CATEGORY</Text>
-            <View style={{backgroundColor:'#2D4A35',borderRadius:10,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',overflow:'hidden'}}>
-              {['Advertising & Marketing','Bank Charges','Equipment','Insurance','Legal & Professional Fees','Meals & Entertainment','Office Supplies','Payroll','Rent & Lease','Software & Subscriptions','Taxes & Licenses','Travel','Utilities','Vehicle','Other'].map(cat => (
-                <TouchableOpacity key={cat} onPress={()=>setExpenseForm(f=>({...f,category:cat}))} style={{padding:12,backgroundColor:expenseForm.category===cat?'#3D5A45':'transparent',borderBottomWidth:0.5,borderBottomColor:'#3D5A45'}}>
-                  <Text style={{color:expenseForm.category===cat?'#A8D4A8':'#fff',fontSize:14}}>{cat}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <TouchableOpacity onPress={()=>setShowExpenseCategoryPicker(true)} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+              <Text style={{color:expenseForm.category?'#fff':'#7A9A7A',fontSize:15}}>{expenseForm.category||'Select category...'}</Text>
+              <Text style={{color:'#7A9A7A',fontSize:12}}>▼</Text>
+            </TouchableOpacity>
+            <Modal visible={showExpenseCategoryPicker} transparent animationType='slide'>
+              <TouchableOpacity style={{flex:1,backgroundColor:'rgba(0,0,0,0.5)'}} onPress={()=>setShowExpenseCategoryPicker(false)} />
+              <View style={{backgroundColor:'#1E3A28',borderTopLeftRadius:20,borderTopRightRadius:20,padding:20,maxHeight:'60%'}}>
+                <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'700',marginBottom:16,textAlign:'center'}}>Select Category</Text>
+                <ScrollView>
+                  {['Advertising & Marketing','Bank Charges','Equipment','Insurance','Legal & Professional Fees','Meals & Entertainment','Office Supplies','Payroll','Rent & Lease','Software & Subscriptions','Taxes & Licenses','Travel','Utilities','Vehicle','Other'].map(cat=>(
+                    <TouchableOpacity key={cat} onPress={()=>{setExpenseForm(f=>({...f,category:cat}));setShowExpenseCategoryPicker(false);}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:'#3D5A45',backgroundColor:expenseForm.category===cat?'#3D5A45':'transparent',borderRadius:8,marginBottom:2}}>
+                      <Text style={{color:expenseForm.category===cat?'#A8D4A8':'#fff',fontSize:15}}>{cat}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </Modal>
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>AMOUNT ($)</Text>
             <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={expenseForm.amount} onChangeText={v=>setExpenseForm(f=>({...f,amount:v}))} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DESCRIPTION</Text>
@@ -702,6 +714,24 @@ export default function HomeScreen() {
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>VENDOR</Text>
             <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={billForm.vendor} onChangeText={v=>setBillForm(f=>({...f,vendor:v}))} placeholder="Landlord" placeholderTextColor="#7A9A7A" />
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>CATEGORY</Text>
+            <TouchableOpacity onPress={()=>setShowBillCategoryPicker(true)} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+              <Text style={{color:billForm.category?'#fff':'#7A9A7A',fontSize:15}}>{billForm.category||'Select category...'}</Text>
+              <Text style={{color:'#7A9A7A',fontSize:12}}>▼</Text>
+            </TouchableOpacity>
+            <Modal visible={showBillCategoryPicker} transparent animationType='slide'>
+              <TouchableOpacity style={{flex:1,backgroundColor:'rgba(0,0,0,0.5)'}} onPress={()=>setShowBillCategoryPicker(false)} />
+              <View style={{backgroundColor:'#1E3A28',borderTopLeftRadius:20,borderTopRightRadius:20,padding:20,maxHeight:'60%'}}>
+                <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'700',marginBottom:16,textAlign:'center'}}>Select Category</Text>
+                <ScrollView>
+                  {['Rent & Lease','Utilities','Insurance','Loan Payment','Supplier Invoice','Equipment Lease','Professional Services','Payroll','Taxes','Software & Subscriptions','Other'].map(cat=>(
+                    <TouchableOpacity key={cat} onPress={()=>{setBillForm(f=>({...f,category:cat}));setShowBillCategoryPicker(false);}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:'#3D5A45',backgroundColor:billForm.category===cat?'#3D5A45':'transparent',borderRadius:8,marginBottom:2}}>
+                      <Text style={{color:billForm.category===cat?'#A8D4A8':'#fff',fontSize:15}}>{cat}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </Modal>
+            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>AMOUNT ($)</Text>
             <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={billForm.amount} onChangeText={v=>setBillForm(f=>({...f,amount:v}))} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DESCRIPTION</Text>
             <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={billForm.description} onChangeText={v=>setBillForm(f=>({...f,description:v}))} placeholder="Monthly rent" placeholderTextColor="#7A9A7A" />
@@ -769,6 +799,8 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
+
 
 
 
