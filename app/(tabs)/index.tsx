@@ -21,6 +21,12 @@ export default function HomeScreen() {
   const [showReports, setShowReports] = useState(false);
   const [showExpenseCategoryPicker, setShowExpenseCategoryPicker] = useState(false);
   const [showBillCategoryPicker, setShowBillCategoryPicker] = useState(false);
+  const [showCustomers, setShowCustomers] = useState(false);
+  const [showVendors, setShowVendors] = useState(false);
+  const [customers, setCustomers] = useState([]);
+  const [vendors, setVendors] = useState([]);
+  const [customerForm, setCustomerForm] = useState({ name:'', email:'', phone:'', salesperson:'' });
+  const [vendorForm, setVendorForm] = useState({ name:'', email:'', phone:'' });
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [selectedBill, setSelectedBill] = useState(null);
@@ -46,6 +52,8 @@ export default function HomeScreen() {
         loadInvoices(d.orgs?.[0]?.id, d.accessToken);
         loadExpenses(d.orgs?.[0]?.id, d.accessToken);
         loadBills(d.orgs?.[0]?.id, d.accessToken);
+        loadCustomers(d.orgs?.[0]?.id, d.accessToken);
+        loadVendors(d.orgs?.[0]?.id, d.accessToken);
       } else Alert.alert('Error', 'Invalid credentials');
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
   }
@@ -62,6 +70,8 @@ export default function HomeScreen() {
         loadInvoices(d.orgs?.[0]?.id, d.accessToken);
         loadExpenses(d.orgs?.[0]?.id, d.accessToken);
         loadBills(d.orgs?.[0]?.id, d.accessToken);
+        loadCustomers(d.orgs?.[0]?.id, d.accessToken);
+        loadVendors(d.orgs?.[0]?.id, d.accessToken);
       } else Alert.alert('Error', j.message || 'Registration failed');
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
   }
@@ -82,6 +92,18 @@ export default function HomeScreen() {
     } catch(e) {}
   }
 
+  async function loadCustomers(orgId, tok) {
+    try {
+      const r = await fetch(API+'/orgs/'+orgId+'/contacts?type=customer', { headers:{ Authorization:'Bearer '+tok } });
+      const j = await r.json(); setCustomers(j.data||[]);
+    } catch(e) {}
+  }
+  async function loadVendors(orgId, tok) {
+    try {
+      const r = await fetch(API+'/orgs/'+orgId+'/contacts?type=vendor', { headers:{ Authorization:'Bearer '+tok } });
+      const j = await r.json(); setVendors(j.data||[]);
+    } catch(e) {}
+  }
   async function loadBills(orgId, tok) {
     try {
       const r = await fetch(API+'/orgs/'+orgId+'/bills', { headers:{'Authorization':'Bearer '+tok} });
@@ -369,6 +391,12 @@ export default function HomeScreen() {
       </TouchableOpacity>
       <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#1C3A4A',borderRadius:12,padding:16,alignItems:'center',marginBottom:24}} onPress={()=>setShowReports(true)}>
         <Text style={{color:'#A8C4D4',fontSize:16,fontWeight:'600'}}>View Reports</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#2D3A4A',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>setShowCustomers(true)}>
+        <Text style={{color:'#A8B4D4',fontSize:16,fontWeight:'600'}}>Customers</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#3A2D4A',borderRadius:12,padding:16,alignItems:'center',marginBottom:24}} onPress={()=>setShowVendors(true)}>
+        <Text style={{color:'#C4A8D4',fontSize:16,fontWeight:'600'}}>Vendors</Text>
       </TouchableOpacity>
 
       {invoices.length > 0 && (
@@ -796,9 +824,61 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
       </Modal>
+      {/* Customers Modal */}
+      <Modal visible={showCustomers} animationType="slide" presentationStyle="pageSheet">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
+          <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
+            <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
+              <Text style={{color:'#fff',fontSize:22,fontWeight:'700'}}>Customers</Text>
+              <TouchableOpacity onPress={()=>setShowCustomers(false)}>
+                <Text style={{color:'#7A9A7A',fontSize:16}}>Close</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={{color:'#7A9A7A',fontSize:13,marginBottom:16}}>{customers.length} customer{customers.length!==1?'s':''}</Text>
+            {customers.map(c=>(
+              <View key={c.id} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:12}}>
+                <Text style={{color:'#fff',fontSize:16,fontWeight:'600'}}>{c.name}</Text>
+                {c.email?<Text style={{color:'#7A9A7A',fontSize:13,marginTop:4}}>{c.email}</Text>:null}
+                {c.phone?<Text style={{color:'#7A9A7A',fontSize:13,marginTop:2}}>{c.phone}</Text>:null}
+                {c.salesperson?<Text style={{color:'#7A9A7A',fontSize:12,marginTop:4}}>Rep: {c.salesperson}</Text>:null}
+              </View>
+            ))}
+            {customers.length===0&&<Text style={{color:'#7A9A7A',textAlign:'center',marginTop:40}}>No customers yet</Text>}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Vendors Modal */}
+      <Modal visible={showVendors} animationType="slide" presentationStyle="pageSheet">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
+          <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
+            <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
+              <Text style={{color:'#fff',fontSize:22,fontWeight:'700'}}>Vendors</Text>
+              <TouchableOpacity onPress={()=>setShowVendors(false)}>
+                <Text style={{color:'#7A9A7A',fontSize:16}}>Close</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={{color:'#7A9A7A',fontSize:13,marginBottom:16}}>{vendors.length} vendor{vendors.length!==1?'s':''}</Text>
+            {vendors.map(v=>(
+              <View key={v.id} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:12}}>
+                <Text style={{color:'#fff',fontSize:16,fontWeight:'600'}}>{v.name}</Text>
+                {v.email?<Text style={{color:'#7A9A7A',fontSize:13,marginTop:4}}>{v.email}</Text>:null}
+                {v.phone?<Text style={{color:'#7A9A7A',fontSize:13,marginTop:2}}>{v.phone}</Text>:null}
+              </View>
+            ))}
+            {vendors.length===0&&<Text style={{color:'#7A9A7A',textAlign:'center',marginTop:40}}>No vendors yet</Text>}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
+
     </ScrollView>
   );
 }
+
+
+
+
+
 
 
 
