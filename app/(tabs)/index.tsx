@@ -850,7 +850,7 @@ export default function HomeScreen() {
                 <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>EMAIL</Text>
                 <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:10,borderWidth:1,borderColor:'#3D5A45'}} value={customerForm.email} onChangeText={v=>setCustomerForm(f=>({...f,email:v}))} placeholder='billing@acme.com' placeholderTextColor='#7A9A7A' keyboardType='email-address' />
                 <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>PHONE</Text>
-                <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:10,borderWidth:1,borderColor:'#3D5A45'}} value={customerForm.phone} onChangeText={v=>setCustomerForm(f=>({...f,phone:v}))} placeholder='(555) 000-0000' placeholderTextColor='#7A9A7A' keyboardType='phone-pad' />
+                <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:10,borderWidth:1,borderColor:'#3D5A45'}} value={customerForm.phone} onChangeText={v=>{const d=v.replace(/\D/g,'').slice(0,10);let p=d;if(d.length>=7)p='('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6);else if(d.length>=4)p='('+d.slice(0,3)+') '+d.slice(3);setCustomerForm(f=>({...f,phone:p}));}} placeholder='(555) 000-0000' placeholderTextColor='#7A9A7A' keyboardType='phone-pad' />
                 <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>SALESPERSON</Text>
                 <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={customerForm.salesperson} onChangeText={v=>setCustomerForm(f=>({...f,salesperson:v}))} placeholder='Jane Smith' placeholderTextColor='#7A9A7A' />
                 <View style={{flexDirection:'row',gap:10}}>
@@ -914,7 +914,7 @@ export default function HomeScreen() {
                 <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>EMAIL</Text>
                 <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:10,borderWidth:1,borderColor:'#3D5A45'}} value={vendorForm.email} onChangeText={v=>setVendorForm(f=>({...f,email:v}))} placeholder='vendor@example.com' placeholderTextColor='#7A9A7A' keyboardType='email-address' />
                 <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>PHONE</Text>
-                <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={vendorForm.phone} onChangeText={v=>setVendorForm(f=>({...f,phone:v}))} placeholder='(555) 000-0000' placeholderTextColor='#7A9A7A' keyboardType='phone-pad' />
+                <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={vendorForm.phone} onChangeText={v=>{const d=v.replace(/\D/g,'').slice(0,10);let p=d;if(d.length>=7)p='('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6);else if(d.length>=4)p='('+d.slice(0,3)+') '+d.slice(3);setVendorForm(f=>({...f,phone:p}));}} placeholder='(555) 000-0000' placeholderTextColor='#7A9A7A' keyboardType='phone-pad' />
                 <View style={{flexDirection:'row',gap:10}}>
                   <TouchableOpacity onPress={()=>setShowVendorForm(false)} style={{flex:1,backgroundColor:'#3D5A45',borderRadius:10,padding:12,alignItems:'center'}}>
                     <Text style={{color:'#A8D4A8',fontSize:14}}>Cancel</Text>
@@ -956,6 +956,7 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
 
 
 
