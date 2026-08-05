@@ -158,7 +158,7 @@ export default function HomeScreen() {
       const j = await r.json();
       if (j.success) {
         setShowExpense(false); setEditingExpense(false);
-        setExpenseForm({ vendor:'', amount:'', description:'' });
+        setExpenseForm({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), paymentMethod:'', receiptNumber:'' });
         loadExpenses(org.id, token);
         Alert.alert('Saved!', editingExpense ? 'Expense updated' : 'Expense recorded');
       } else Alert.alert('Error', j.message || 'Failed');
@@ -282,7 +282,7 @@ export default function HomeScreen() {
 
   function editExpense(exp) {
     setSelectedExpense(exp);
-    setExpenseForm({ vendor: exp.vendor||'', amount: String(exp.amount)||'', description: exp.description||'' });
+    setExpenseForm({ vendor: exp.vendor||'', amount: String(exp.amount)||'', description: exp.description||'', category: exp.category||'', date: exp.date ? new Date(exp.date).toISOString().slice(0,10) : new Date().toISOString().slice(0,10), paymentMethod: exp.paymentMethod||'', receiptNumber: exp.receiptNumber||'' });
     setEditingExpense(true);
     setShowExpenseDetail(false);
     setShowExpense(true);
@@ -979,6 +979,8 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
+
 
 
 
