@@ -39,7 +39,7 @@ export default function HomeScreen() {
   const [bills, setBills] = useState([]);
   const [lines, setLines] = useState([{ description:'', quantity:'1', unitPrice:'' }]);
   const [invoiceForm, setInvoiceForm] = useState({ clientName:'', clientEmail:'', poNumber:'', notes:'', taxRate:'', shipping:'', discount:'' });
-  const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'', category:'', date:'', paymentMethod:'', receiptNumber:'' });
+  const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), paymentMethod:'', receiptNumber:'' });
   const [showPaymentMethodPicker, setShowPaymentMethodPicker] = useState(false);
   const [billForm, setBillForm] = useState({ vendor:'', amount:'', description:'', category:'' });
   const [regForm, setRegForm] = useState({ fullName:'', orgName:'', email:'', password:'' });
@@ -979,6 +979,7 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
 
 
 
