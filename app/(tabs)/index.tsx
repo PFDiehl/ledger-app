@@ -730,7 +730,7 @@ export default function HomeScreen() {
               <Text style={{color:'#7A9A7A',fontSize:12}}>📅</Text>
             </TouchableOpacity>
             {showDatePicker&&(
-              <DateTimePicker value={expenseForm.date?new Date(expenseForm.date):new Date()} mode="date" display="default" onChange={(e,d)=>{setShowDatePicker(false);if(d)setExpenseForm(f=>({...f,date:d.toISOString().slice(0,10)});}} />
+              <DateTimePicker value={expenseForm.date?new Date(expenseForm.date):new Date()} mode="date" display="default" onChange={(e,d)=>{setShowDatePicker(false);if(d){setExpenseForm(f=>({...f,date:d.toISOString().slice(0,10)}));}}} />
             )}
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>PAYMENT METHOD</Text>
             <TouchableOpacity onPress={()=>setShowPaymentMethodPicker(true)} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
@@ -987,6 +987,7 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
 
 
 
