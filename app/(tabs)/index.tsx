@@ -42,6 +42,8 @@ export default function HomeScreen() {
   const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), paymentMethod:'', receiptNumber:'' });
   const [showPaymentMethodPicker, setShowPaymentMethodPicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [calViewYear, setCalViewYear] = useState(new Date().getFullYear());
+  const [calViewMonth, setCalViewMonth] = useState(new Date().getMonth());
   const [billForm, setBillForm] = useState({ vendor:'', amount:'', description:'', category:'' });
   const [regForm, setRegForm] = useState({ fullName:'', orgName:'', email:'', password:'' });
   const [editingInvoice, setEditingInvoice] = useState(false);
@@ -732,24 +734,21 @@ export default function HomeScreen() {
               <View style={{flex:1,backgroundColor:'rgba(0,0,0,0.6)',justifyContent:'center',alignItems:'center',padding:24}}>
                 <View style={{backgroundColor:'#1E3A28',borderRadius:16,padding:20,width:'100%',maxWidth:340}}>
                   {(()=>{
-                    const selDate=expenseForm.date?new Date(expenseForm.date+'T12:00:00'):new Date();
-                    const [viewYear,setViewYear]=React.useState(selDate.getFullYear());
-                    const [viewMonth,setViewMonth]=React.useState(selDate.getMonth());
                     const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
                     const dayNames=['Su','Mo','Tu','We','Th','Fr','Sa'];
-                    const firstDay=new Date(viewYear,viewMonth,1).getDay();
-                    const daysInMonth=new Date(viewYear,viewMonth+1,0).getDate();
+                    const firstDay=new Date(calViewYear,calViewMonth,1).getDay();
+                    const daysInMonth=new Date(calViewYear,calViewMonth+1,0).getDate();
                     const cells=Array.from({length:firstDay+daysInMonth},(_,i)=>i<firstDay?null:i-firstDay+1);
-                    const isSelected=(d)=>d&&expenseForm.date===`${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                    const isToday=(d)=>{const t=new Date();return d&&t.getFullYear()===viewYear&&t.getMonth()===viewMonth&&t.getDate()===d;};
+                    const isSelected=(d)=>d&&expenseForm.date===`${calViewYear}-${String(calViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    const isToday=(d)=>{const t=new Date();return d&&t.getFullYear()===calViewYear&&t.getMonth()===calViewMonth&&t.getDate()===d;};
                     return(
                       <View>
                         <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
-                          <TouchableOpacity onPress={()=>{if(viewMonth===0){setViewMonth(11);setViewYear(y=>y-1);}else setViewMonth(m=>m-1);}} style={{padding:8}}>
+                          <TouchableOpacity onPress={()=>{if(calViewMonth===0){setCalViewMonth(11);setCalViewYear(y=>y-1);}else setCalViewMonth(m=>m-1);}} style={{padding:8}}>
                             <Text style={{color:'#A8D4A8',fontSize:20}}>‹</Text>
                           </TouchableOpacity>
-                          <Text style={{color:'#fff',fontSize:16,fontWeight:'600'}}>{monthNames[viewMonth]} {viewYear}</Text>
-                          <TouchableOpacity onPress={()=>{if(viewMonth===11){setViewMonth(0);setViewYear(y=>y+1);}else setViewMonth(m=>m+1);}} style={{padding:8}}>
+                          <Text style={{color:'#fff',fontSize:16,fontWeight:'600'}}>{monthNames[calViewMonth]} {calViewYear}</Text>
+                          <TouchableOpacity onPress={()=>{if(calViewMonth===11){setCalViewMonth(0);setCalViewYear(y=>y+1);}else setCalViewMonth(m=>m+1);}} style={{padding:8}}>
                             <Text style={{color:'#A8D4A8',fontSize:20}}>›</Text>
                           </TouchableOpacity>
                         </View>
@@ -758,7 +757,7 @@ export default function HomeScreen() {
                         </View>
                         <View style={{flexDirection:'row',flexWrap:'wrap'}}>
                           {cells.map((d,i)=>(
-                            <TouchableOpacity key={i} onPress={()=>{if(d){const ds=`${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;setExpenseForm(f=>({...f,date:ds}));setShowDatePicker(false);}}} style={{width:'14.28%',aspectRatio:1,alignItems:'center',justifyContent:'center',marginBottom:2}}>
+                            <TouchableOpacity key={i} onPress={()=>{if(d){const ds=`${calViewYear}-${String(calViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;setExpenseForm(f=>({...f,date:ds}));setShowDatePicker(false);}}} style={{width:'14.28%',aspectRatio:1,alignItems:'center',justifyContent:'center',marginBottom:2}}>
                               {d?<View style={{width:32,height:32,borderRadius:16,backgroundColor:isSelected(d)?'#A8D4A8':'transparent',alignItems:'center',justifyContent:'center',borderWidth:isToday(d)&&!isSelected(d)?1:0,borderColor:'#A8D4A8'}}>
                                 <Text style={{color:isSelected(d)?'#1C2E1C':'#fff',fontSize:14,fontWeight:isSelected(d)||isToday(d)?'700':'400'}}>{d}</Text>
                               </View>:null}
@@ -1029,6 +1028,8 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
+
 
 
 
