@@ -12,7 +12,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.mountaintopledger.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,"NSCameraUsageDescription": "Used to scan receipts for expenses",
+        "NSPhotoLibraryUsageDescription": "Used to select receipt photos for expenses"
       }
     },
     "android": {
