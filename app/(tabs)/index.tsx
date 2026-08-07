@@ -166,7 +166,7 @@ export default function HomeScreen() {
         setShowExpense(false); setEditingExpense(false);
         setExpenseForm({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), paymentMethod:'', receiptNumber:'' });
         loadExpenses(org.id, token);
-        if (pendingReceiptBase64.current && j.data && j.data.id) {
+        Alert.alert('Debug', 'pending='+!!pendingReceiptBase64.current+' id='+(j.data&&j.data.id)); Alert.alert('Debug', 'pending='+!!pendingReceiptBase64.current+' id='+(j.data&&j.data.id)); if (pendingReceiptBase64.current && j.data && j.data.id) {
           try {
             await fetch(API+'/orgs/'+org.id+'/expenses/'+j.data.id+'/receipt', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify({imageBase64:pendingReceiptBase64.current,mediaType:'image/jpeg'}) });
           } catch(e) {}
@@ -725,7 +725,7 @@ export default function HomeScreen() {
                 const j=await r.json();
                 if(!j.success)throw new Error(j.message);
                 const info=j.data;
-                setExpenseForm(f=>({...f,vendor:info.vendor||f.vendor,amount:String(info.amount||f.amount),date:info.date||f.date,category:info.category||f.category}));
+                const safeDate = info.date && !isNaN(new Date(info.date)) ? info.date : new Date().toISOString().slice(0,10); setExpenseForm(f=>({...f,vendor:info.vendor||f.vendor,amount:String(info.amount||f.amount),date:safeDate,category:info.category||f.category}));
                 pendingReceiptBase64.current = b64;
                 Alert.alert('Receipt scanned!','Please review the filled fields.');
               }catch(e){Alert.alert('Error','Could not read receipt. Fill in manually.');}
@@ -1058,6 +1058,9 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
+
+
 
 
 
