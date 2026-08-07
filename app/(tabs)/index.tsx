@@ -717,7 +717,7 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={async()=>{
               const perm=await ImagePicker.requestMediaLibraryPermissionsAsync();
               if(perm.status!=='granted'){Alert.alert('Permission needed','Please allow photo access.');return;}
-              const result=await ImagePicker.launchImageLibraryAsync({mediaTypes:ImagePicker.MediaTypeOptions.Images,base64:true,quality:0.8});
+              const result=await ImagePicker.launchImageLibraryAsync({mediaTypes:ImagePicker.MediaTypeOptions.Images,base64:true,quality:0.4});
               if(result.canceled)return;
               setScanningReceipt(true);
               try{
@@ -1059,6 +1059,7 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
 
 
 
