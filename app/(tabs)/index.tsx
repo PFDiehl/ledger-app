@@ -43,7 +43,7 @@ export default function HomeScreen() {
   const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), paymentMethod:'', receiptNumber:'' });
   const [showPaymentMethodPicker, setShowPaymentMethodPicker] = useState(false);
   const [scanningReceipt, setScanningReceipt] = useState(false);
-  const [pendingReceiptBase64, setPendingReceiptBase64] = React.useState<string|null>(null);
+  const pendingReceiptBase64 = React.useRef<string|null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [calViewYear, setCalViewYear] = useState(new Date().getFullYear());
   const [calViewMonth, setCalViewMonth] = useState(new Date().getMonth());
@@ -166,12 +166,12 @@ export default function HomeScreen() {
         setShowExpense(false); setEditingExpense(false);
         setExpenseForm({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), paymentMethod:'', receiptNumber:'' });
         loadExpenses(org.id, token);
-        if (pendingReceiptBase64 && j.data && j.data.id) {
+        if (pendingReceiptBase64.current && j.data && j.data.id) {
           try {
-            await fetch(API+'/orgs/'+org.id+'/expenses/'+j.data.id+'/receipt', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify({imageBase64:pendingReceiptBase64,mediaType:'image/jpeg'}) });
+            await fetch(API+'/orgs/'+org.id+'/expenses/'+j.data.id+'/receipt', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify({imageBase64:pendingReceiptBase64.current,mediaType:'image/jpeg'}) });
           } catch(e) {}
         }
-        setPendingReceiptBase64(null);
+        pendingReceiptBase64.current = null;
         Alert.alert('Saved!', editingExpense ? 'Expense updated' : 'Expense recorded');
       } else Alert.alert('Error', j.message || 'Failed');
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
@@ -295,7 +295,7 @@ export default function HomeScreen() {
   function editExpense(exp) {
     setSelectedExpense(exp);
     setExpenseForm({ vendor: exp.vendor||'', amount: String(exp.amount)||'', description: exp.description||'', category: exp.category||'', date: exp.date ? new Date(exp.date).toISOString().slice(0,10) : new Date().toISOString().slice(0,10), paymentMethod: exp.paymentMethod||'', receiptNumber: exp.receiptNumber||'' });
-        setPendingReceiptBase64(null);
+        pendingReceiptBase64.current = null;
     setEditingExpense(true);
     setShowExpenseDetail(false);
     setShowExpense(true);
@@ -726,7 +726,7 @@ export default function HomeScreen() {
                 if(!j.success)throw new Error(j.message);
                 const info=j.data;
                 setExpenseForm(f=>({...f,vendor:info.vendor||f.vendor,amount:String(info.amount||f.amount),date:info.date||f.date,category:info.category||f.category}));
-                setPendingReceiptBase64(b64);
+                pendingReceiptBase64.current = b64;
                 Alert.alert('Receipt scanned!','Please review the filled fields.');
               }catch(e){Alert.alert('Error','Could not read receipt. Fill in manually.');}
               finally{setScanningReceipt(false);}
@@ -1058,6 +1058,7 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
 
 
 
