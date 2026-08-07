@@ -166,7 +166,7 @@ export default function HomeScreen() {
         setShowExpense(false); setEditingExpense(false);
         setExpenseForm({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), paymentMethod:'', receiptNumber:'' });
         loadExpenses(org.id, token);
-        Alert.alert('Debug', 'pending='+!!pendingReceiptBase64.current+' id='+(j.data&&j.data.id)); Alert.alert('Debug', 'pending='+!!pendingReceiptBase64.current+' id='+(j.data&&j.data.id)); if (pendingReceiptBase64.current && j.data && j.data.id) {
+        if (pendingReceiptBase64.current && j.data && j.data.id) {
           try {
             await fetch(API+'/orgs/'+org.id+'/expenses/'+j.data.id+'/receipt', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify({imageBase64:pendingReceiptBase64.current,mediaType:'image/jpeg'}) });
           } catch(e) {}
@@ -1058,6 +1058,7 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
 
 
 
