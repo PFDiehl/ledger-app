@@ -157,6 +157,7 @@ export default function HomeScreen() {
 
   async function saveExpense() {
     if (!expenseForm.vendor || !expenseForm.amount) return Alert.alert('Error', 'Fill in vendor and amount');
+    const receiptToUpload = pendingReceiptBase64.current;
     try {
       const method = editingExpense ? 'PATCH' : 'POST';
       const url = editingExpense ? API+'/orgs/'+org.id+'/expenses/'+selectedExpense.id : API+'/orgs/'+org.id+'/expenses';
@@ -166,9 +167,9 @@ export default function HomeScreen() {
         setShowExpense(false); setEditingExpense(false);
         setExpenseForm({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), paymentMethod:'', receiptNumber:'' });
         loadExpenses(org.id, token);
-        if (pendingReceiptBase64.current && j.data && j.data.id) {
+        if (receiptToUpload && j.data && j.data.id) {
           try {
-            await fetch(API+'/orgs/'+org.id+'/expenses/'+j.data.id+'/receipt', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify({imageBase64:pendingReceiptBase64.current,mediaType:'image/jpeg'}) });
+            await fetch(API+'/orgs/'+org.id+'/expenses/'+j.data.id+'/receipt', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify({imageBase64:receiptToUpload,mediaType:'image/jpeg'}) });
           } catch(e) {}
         }
         pendingReceiptBase64.current = null;
@@ -1058,6 +1059,7 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
 
 
 
