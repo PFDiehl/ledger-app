@@ -157,7 +157,7 @@ export default function HomeScreen() {
 
   async function saveExpense() {
     if (!expenseForm.vendor || !expenseForm.amount) return Alert.alert('Error', 'Fill in vendor and amount');
-    const receiptToUpload = pendingReceiptBase64.current;
+    const receiptToUpload = pendingReceiptBase64.current; console.log('RECEIPT TO UPLOAD:', !!receiptToUpload, receiptToUpload ? receiptToUpload.slice(0,20) : 'null');
     try {
       const method = editingExpense ? 'PATCH' : 'POST';
       const url = editingExpense ? API+'/orgs/'+org.id+'/expenses/'+selectedExpense.id : API+'/orgs/'+org.id+'/expenses';
@@ -1059,6 +1059,7 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
 
 
 
