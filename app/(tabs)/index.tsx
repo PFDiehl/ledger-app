@@ -310,7 +310,7 @@ export default function HomeScreen() {
 
   function editBill(bill) {
     setSelectedBill(bill);
-    setBillForm({ vendor: bill.vendor||'', amount: String(bill.amount)||'', description: bill.description||'' });
+    setBillForm({ vendor: bill.vendor||'', amount: String(bill.amount)||'', description: bill.description||'', category: bill.category||'', dueDate: bill.dueDate ? new Date(bill.dueDate).toISOString().slice(0,10) : new Date().toISOString().slice(0,10) });
     setEditingBill(true);
     setShowBillDetail(false);
     setShowBill(true);
@@ -1159,6 +1159,7 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
 
 
 
