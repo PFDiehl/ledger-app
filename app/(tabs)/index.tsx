@@ -405,7 +405,7 @@ export default function HomeScreen() {
       <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#2D4A35',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingInvoice(false);setInvoiceForm({clientName:'',clientEmail:'',poNumber:'',notes:'',taxRate:'',shipping:'',discount:''});setLines([{description:'',quantity:'1',unitPrice:''}]);setShowInvoice(true);}}>
         <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>+ New Invoice</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingExpense(false);setExpenseForm({vendor:'',amount:'',description:''});setShowExpense(true);}}>
+      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingExpense(false);setExpenseForm({vendor:'',amount:'',description:'',category:'',date:new Date().toISOString().slice(0,10),paymentMethod:'',receiptNumber:''});setShowExpense(true);}}>
         <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>+ Add Expense</Text>
       </TouchableOpacity>
       <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#4A3D2D',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingBill(false);setBillForm({vendor:'',amount:'',description:''});setShowBill(true);}}>
@@ -1098,6 +1098,7 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
 
 
 
