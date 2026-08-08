@@ -922,7 +922,7 @@ export default function HomeScreen() {
               </View>
             </Modal>
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>AMOUNT ($)</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={billForm.amount?Number(billForm.amount.replace(/,/g,'')).toLocaleString('en-US'):''} onChangeText={v=>{const raw=v.replace(/,/g,'');if(!isNaN(raw)||raw==='')setBillForm(f=>({...f,amount:raw}));}} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
+            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={billForm.amount?(()=>{const parts=billForm.amount.split('.');const intPart=Number(parts[0].replace(/,/g,'')||0).toLocaleString('en-US');return parts.length>1?intPart+'.'+parts[1]:intPart;})():''} onChangeText={v=>{const raw=v.replace(/,/g,'');if(raw===''||/^\d*\.?\d*$/.test(raw))setBillForm(f=>({...f,amount:raw}));}} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>BILL DATE</Text>
             <TouchableOpacity onPress={()=>{setBillCalViewYear(new Date().getFullYear());setBillCalViewMonth(new Date().getMonth());setBillDatePickerVisible(true);}} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
               <Text style={{color:billForm.billDate?'#fff':'#7A9A7A',fontSize:15}}>{billForm.billDate ? new Date(billForm.billDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select date'}</Text>
@@ -1210,6 +1210,8 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
+
 
 
 
