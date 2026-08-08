@@ -45,7 +45,6 @@ export default function HomeScreen() {
   const [scanningReceipt, setScanningReceipt] = useState(false);
   const pendingReceiptBase64 = React.useRef<string|null>(null);
   const pendingReceiptUrl = React.useRef<string|null>(null);
-  const pendingReceiptUrl = React.useRef<string|null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [calViewYear, setCalViewYear] = useState(new Date().getFullYear());
   const [calViewMonth, setCalViewMonth] = useState(new Date().getMonth());
