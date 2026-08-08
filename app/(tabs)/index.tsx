@@ -25,6 +25,9 @@ export default function HomeScreen() {
   const [billDatePickerVisible, setBillDatePickerVisible] = useState(false);
   const [billCalViewYear, setBillCalViewYear] = useState(new Date().getFullYear());
   const [billCalViewMonth, setBillCalViewMonth] = useState(new Date().getMonth());
+  const [billDueDatePickerVisible, setBillDueDatePickerVisible] = useState(false);
+  const [billDueCalViewYear, setBillDueCalViewYear] = useState(new Date().getFullYear());
+  const [billDueCalViewMonth, setBillDueCalViewMonth] = useState(new Date().getMonth());
   const [showCustomers, setShowCustomers] = useState(false);
   const [showVendors, setShowVendors] = useState(false);
   const [customers, setCustomers] = useState([]);
@@ -310,7 +313,7 @@ export default function HomeScreen() {
 
   function editBill(bill) {
     setSelectedBill(bill);
-    setBillForm({ vendor: bill.vendor||'', amount: String(bill.amount)||'', description: bill.description||'', category: bill.category||'', dueDate: bill.dueDate ? new Date(bill.dueDate).toISOString().slice(0,10) : new Date().toISOString().slice(0,10) });
+    setBillForm({ vendor: bill.vendor||'', amount: String(bill.amount)||'', description: bill.description||'', category: bill.category||'', billDate: bill.billDate ? new Date(bill.billDate).toISOString().slice(0,10) : new Date().toISOString().slice(0,10), dueDate: bill.dueDate ? new Date(bill.dueDate).toISOString().slice(0,10) : '' });
     setEditingBill(true);
     setShowBillDetail(false);
     setShowBill(true);
@@ -411,7 +414,7 @@ export default function HomeScreen() {
       <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingExpense(false);setExpenseForm({vendor:'',amount:'',description:'',category:'',date:new Date().toISOString().slice(0,10),paymentMethod:'',receiptNumber:''});setShowExpense(true);}}>
         <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>+ Add Expense</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#4A3D2D',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingBill(false);setBillForm({vendor:'',amount:'',description:'',category:'',dueDate:new Date().toISOString().slice(0,10)});setShowBill(true);}}>
+      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#4A3D2D',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingBill(false);setBillForm({vendor:'',amount:'',description:'',category:'',billDate:new Date().toISOString().slice(0,10),dueDate:''});setShowBill(true);}}>
         <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>+ Add Bill</Text>
       </TouchableOpacity>
       <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#1C3A4A',borderRadius:12,padding:16,alignItems:'center',marginBottom:24}} onPress={()=>setShowReports(true)}>
@@ -922,7 +925,7 @@ export default function HomeScreen() {
             <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={billForm.amount} onChangeText={v=>setBillForm(f=>({...f,amount:v}))} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>BILL DATE</Text>
             <TouchableOpacity onPress={()=>{setBillCalViewYear(new Date().getFullYear());setBillCalViewMonth(new Date().getMonth());setBillDatePickerVisible(true);}} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-              <Text style={{color:billForm.dueDate?'#fff':'#7A9A7A',fontSize:15}}>{billForm.dueDate ? new Date(billForm.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select date'}</Text>
+              <Text style={{color:billForm.billDate?'#fff':'#7A9A7A',fontSize:15}}>{billForm.billDate ? new Date(billForm.billDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select date'}</Text>
               <Text style={{color:'#7A9A7A',fontSize:16}}>📅</Text>
             </TouchableOpacity>
             <Modal visible={billDatePickerVisible} transparent animationType='fade'>
@@ -952,7 +955,7 @@ export default function HomeScreen() {
                         </View>
                         <View style={{flexDirection:'row',flexWrap:'wrap'}}>
                           {cells.map((d,i)=>(
-                            <TouchableOpacity key={i} onPress={()=>{if(d){const ds=`${billCalViewYear}-${String(billCalViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;setBillForm(f=>({...f,dueDate:ds}));setBillDatePickerVisible(false);}}} style={{width:'14.28%',aspectRatio:1,alignItems:'center',justifyContent:'center',marginBottom:2}}>
+                            <TouchableOpacity key={i} onPress={()=>{if(d){const ds=`${billCalViewYear}-${String(billCalViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;setBillForm(f=>({...f,billDate:ds}));setBillDatePickerVisible(false);}}} style={{width:'14.28%',aspectRatio:1,alignItems:'center',justifyContent:'center',marginBottom:2}}>
                               {d?<View style={{width:32,height:32,borderRadius:16,backgroundColor:isSelected(d)?'#A8D4A8':'transparent',alignItems:'center',justifyContent:'center',borderWidth:isToday(d)&&!isSelected(d)?1:0,borderColor:'#A8D4A8'}}>
                                 <Text style={{color:isSelected(d)?'#1C2E1C':'#fff',fontSize:14,fontWeight:isSelected(d)||isToday(d)?'700':'400'}}>{d}</Text>
                               </View>:null}
@@ -968,7 +971,55 @@ export default function HomeScreen() {
                 </View>
               </View>
             </Modal>
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DESCRIPTION</Text>
+            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DUE DATE (OPTIONAL)</Text>
+            <TouchableOpacity onPress={()=>{setBillDueCalViewYear(new Date().getFullYear());setBillDueCalViewMonth(new Date().getMonth());setBillDueDatePickerVisible(true);}} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+              <Text style={{color:billForm.dueDate?'#fff':'#7A9A7A',fontSize:15}}>{billForm.dueDate ? new Date(billForm.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select due date'}</Text>
+              <Text style={{color:'#7A9A7A',fontSize:16}}>📅</Text>
+            </TouchableOpacity>
+            <Modal visible={billDueDatePickerVisible} transparent animationType='fade'>
+              <View style={{flex:1,backgroundColor:'rgba(0,0,0,0.6)',justifyContent:'center',alignItems:'center',padding:24}}>
+                <View style={{backgroundColor:'#1E3A28',borderRadius:16,padding:20,width:'100%',maxWidth:340}}>
+                  {(()=>{
+                    const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+                    const dayNames=['Su','Mo','Tu','We','Th','Fr','Sa'];
+                    const firstDay=new Date(billDueCalViewYear,billDueCalViewMonth,1).getDay();
+                    const daysInMonth=new Date(billDueCalViewYear,billDueCalViewMonth+1,0).getDate();
+                    const cells=Array.from({length:firstDay+daysInMonth},(_,i)=>i<firstDay?null:i-firstDay+1);
+                    const isSelected=(d)=>d&&billForm.dueDate===`${billDueCalViewYear}-${String(billDueCalViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    const isToday=(d)=>{const t=new Date();return d&&t.getFullYear()===billDueCalViewYear&&t.getMonth()===billDueCalViewMonth&&t.getDate()===d;};
+                    return(
+                      <View>
+                        <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+                          <TouchableOpacity onPress={()=>{if(billDueCalViewMonth===0){setBillDueCalViewMonth(11);setBillDueCalViewYear(y=>y-1);}else setBillDueCalViewMonth(m=>m-1);}} style={{padding:8}}>
+                            <Text style={{color:'#A8D4A8',fontSize:20}}>‹</Text>
+                          </TouchableOpacity>
+                          <Text style={{color:'#fff',fontSize:16,fontWeight:'600'}}>{monthNames[billDueCalViewMonth]} {billDueCalViewYear}</Text>
+                          <TouchableOpacity onPress={()=>{if(billDueCalViewMonth===11){setBillDueCalViewMonth(0);setBillDueCalViewYear(y=>y+1);}else setBillDueCalViewMonth(m=>m+1);}} style={{padding:8}}>
+                            <Text style={{color:'#A8D4A8',fontSize:20}}>›</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <View style={{flexDirection:'row',marginBottom:8}}>
+                          {dayNames.map(d=><View key={d} style={{flex:1,alignItems:'center'}}><Text style={{color:'#7A9A7A',fontSize:11,fontWeight:'600'}}>{d}</Text></View>)}
+                        </View>
+                        <View style={{flexDirection:'row',flexWrap:'wrap'}}>
+                          {cells.map((d,i)=>(
+                            <TouchableOpacity key={i} onPress={()=>{if(d){const ds=`${billDueCalViewYear}-${String(billDueCalViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;setBillForm(f=>({...f,dueDate:ds}));setBillDueDatePickerVisible(false);}}} style={{width:'14.28%',aspectRatio:1,alignItems:'center',justifyContent:'center',marginBottom:2}}>
+                              {d?<View style={{width:32,height:32,borderRadius:16,backgroundColor:isSelected(d)?'#A8D4A8':'transparent',alignItems:'center',justifyContent:'center',borderWidth:isToday(d)&&!isSelected(d)?1:0,borderColor:'#A8D4A8'}}>
+                                <Text style={{color:isSelected(d)?'#1C2E1C':'#fff',fontSize:14,fontWeight:isSelected(d)||isToday(d)?'700':'400'}}>{d}</Text>
+                              </View>:null}
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                        <TouchableOpacity onPress={()=>setBillDueDatePickerVisible(false)} style={{marginTop:16,padding:12,alignItems:'center',borderTopWidth:1,borderTopColor:'#3D5A45'}}>
+                          <Text style={{color:'#7A9A7A',fontSize:15}}>Cancel</Text>
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })()}
+                </View>
+              </View>
+            </Modal>
+<Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DESCRIPTION</Text>
             <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={billForm.description} onChangeText={v=>setBillForm(f=>({...f,description:v}))} placeholder="Monthly rent" placeholderTextColor="#7A9A7A" />
             <TouchableOpacity onPress={()=>{setShowBill(false);setEditingBill(false);}} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginTop:8}}>
               <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Cancel</Text>
@@ -1159,6 +1210,7 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
 
 
 
