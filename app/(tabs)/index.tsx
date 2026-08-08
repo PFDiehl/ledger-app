@@ -45,6 +45,7 @@ export default function HomeScreen() {
   const [scanningReceipt, setScanningReceipt] = useState(false);
   const pendingReceiptBase64 = React.useRef<string|null>(null);
   const pendingReceiptUrl = React.useRef<string|null>(null);
+  const pendingReceiptUrl = React.useRef<string|null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [calViewYear, setCalViewYear] = useState(new Date().getFullYear());
   const [calViewMonth, setCalViewMonth] = useState(new Date().getMonth());
@@ -168,10 +169,12 @@ export default function HomeScreen() {
         setShowExpense(false); setEditingExpense(false);
         setExpenseForm({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), paymentMethod:'', receiptNumber:'' });
         loadExpenses(org.id, token);
-        if (receiptToUpload && j.data && j.data.id) {
+        if (pendingReceiptUrl.current && j.data && j.data.id) {
           try {
-            await fetch(API+'/orgs/'+org.id+'/expenses/'+j.data.id+'/receipt', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify({imageBase64:receiptToUpload,mediaType:'image/jpeg'}) });
-          } catch(e) {}
+            await fetch(API+'/orgs/'+org.id+'/expenses/'+j.data.id+'/receipt/url', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify({receiptUrl:pendingReceiptUrl.current}) });
+            console.log('Receipt URL saved:', pendingReceiptUrl.current);
+          } catch(e) { console.log('Receipt URL save error:', e.message); }
+          pendingReceiptUrl.current = null;
         }
         pendingReceiptBase64.current = null;
         Alert.alert('Saved!', editingExpense ? 'Expense updated' : 'Expense recorded');
@@ -729,7 +732,15 @@ export default function HomeScreen() {
                 const info=j.data;
                 const safeDate = info.date && !isNaN(new Date(info.date)) ? info.date : new Date().toISOString().slice(0,10); setExpenseForm(f=>({...f,vendor:info.vendor||f.vendor,amount:String(info.amount||f.amount),date:safeDate,category:info.category||f.category}));
                 pendingReceiptBase64.current = b64;
-                Alert.alert('Receipt scanned!','Please review the filled fields.');
+                try {
+                  const fd = new FormData();
+                  fd.append('file', 'data:image/jpeg;base64,'+b64);
+                  fd.append('upload_preset', 'ledger_unsigned');
+                  const cr = await fetch('https://api.cloudinary.com/v1_1/gxbce37f/image/upload', {method:'POST', body:fd});
+                  const cj = await cr.json();
+                  if (cj.secure_url) pendingReceiptUrl.current = cj.secure_url;
+                  console.log('Cloudinary direct upload:', cj.secure_url||JSON.stringify(cj.error));
+                } catch(ce){ console.log('Cloudinary error:', ce.message); }Alert.alert('Receipt scanned!','Please review the filled fields.');
               }catch(e){Alert.alert('Error','Could not read receipt. Fill in manually.');}
               finally{setScanningReceipt(false);}
             }} style={{backgroundColor:'#1C3A4A',borderRadius:12,padding:14,alignItems:'center',marginBottom:20,flexDirection:'row',justifyContent:'center',gap:8}}>
