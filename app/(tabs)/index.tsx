@@ -160,7 +160,7 @@ export default function HomeScreen() {
       const j = await r.json();
       if (j.success) {
         setShowInvoice(false); setEditingInvoice(false);
-        setInvoiceForm({ clientName:'', clientEmail:'', poNumber:'', notes:'', taxRate:'', shipping:'', discount:'' });
+        setInvoiceForm({ clientName:'', clientEmail:'', poNumber:'', notes:'', taxRate:'', shipping:'', discount:'', issueDate:new Date().toISOString().slice(0,10), dueDate:'' });
         setLines([{ description:'', quantity:'1', unitPrice:'' }]);
         loadInvoices(org.id, token);
         Alert.alert('Saved!', editingInvoice ? 'Invoice updated' : 'Invoice created');
@@ -1285,6 +1285,7 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
 
 
 
