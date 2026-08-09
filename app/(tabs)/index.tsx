@@ -52,7 +52,8 @@ export default function HomeScreen() {
   const [bills, setBills] = useState([]);
   const [lines, setLines] = useState([{ description:'', quantity:'1', unitPrice:'' }]);
   const [invoiceForm, setInvoiceForm] = useState({ clientName:'', clientEmail:'', poNumber:'', notes:'', taxRate:'', shipping:'', discount:'' });
-  const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), paymentMethod:'', receiptNumber:'' const [invoiceForm, setInvoiceForm] = useState({ clientName:'', clientEmail:'', poNumber:'', notes:'', taxRate:'', shipping:'', discount:'', issueDate:new Date().toISOString().slice(0,10), dueDate:'' });});
+  const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), paymentMethod:'', receiptNumber:'' 
+const [invoiceForm, setInvoiceForm] = useState({ clientName:'', clientEmail:'', poNumber:'', notes:'', taxRate:'', shipping:'', discount:'', issueDate:new Date().toISOString().slice(0,10), dueDate:'' });
   const [showPaymentMethodPicker, setShowPaymentMethodPicker] = useState(false);
   const [scanningReceipt, setScanningReceipt] = useState(false);
   const pendingReceiptBase64 = React.useRef<string|null>(null);
