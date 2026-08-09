@@ -702,7 +702,68 @@ export default function HomeScreen() {
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DUE DATE (OPTIONAL)</Text>
             <TouchableOpacity onPress={()=>{setInvDueCalYear(new Date().getFullYear());setInvDueCalMonth(new Date().getMonth());setInvoiceDueDatePickerVisible(true);}} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:24,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
               <Text style={{color:invoiceForm.dueDate?'#fff':'#7A9A7A',fontSize:15}}>{invoiceForm.dueDate ? new Date(invoiceForm.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select due date'}</Text>
-            </TouchableOpacity>
+            </TouchableOpacity><Modal visible={invoiceDatePickerVisible} transparent animationType='fade'>
+              <View style={{flex:1,backgroundColor:'rgba(0,0,0,0.6)',justifyContent:'center',alignItems:'center',padding:24}}>
+                <View style={{backgroundColor:'#1E3A28',borderRadius:16,padding:20,width:'100%',maxWidth:340}}>
+                  {(()=>{
+                    const mn=['January','February','March','April','May','June','July','August','September','October','November','December'];
+                    const dn=['Su','Mo','Tu','We','Th','Fr','Sa'];
+                    const fd=new Date(invCalYear,invCalMonth,1).getDay();
+                    const dim=new Date(invCalYear,invCalMonth+1,0).getDate();
+                    const cells=Array.from({length:fd+dim},(_,i)=>i<fd?null:i-fd+1);
+                    const isSel=(d)=>d&&invoiceForm.issueDate===`${invCalYear}-${String(invCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    const isToday=(d)=>{const t=new Date();return d&&t.getFullYear()===invCalYear&&t.getMonth()===invCalMonth&&t.getDate()===d;};
+                    return(<View>
+                      <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+                        <TouchableOpacity onPress={()=>{if(invCalMonth===0){setInvCalMonth(11);setInvCalYear(y=>y-1);}else setInvCalMonth(m=>m-1);}} style={{padding:8}}><Text style={{color:'#A8D4A8',fontSize:20}}>{'<'}</Text></TouchableOpacity>
+                        <Text style={{color:'#fff',fontSize:16,fontWeight:'600'}}>{mn[invCalMonth]} {invCalYear}</Text>
+                        <TouchableOpacity onPress={()=>{if(invCalMonth===11){setInvCalMonth(0);setInvCalYear(y=>y+1);}else setInvCalMonth(m=>m+1);}} style={{padding:8}}><Text style={{color:'#A8D4A8',fontSize:20}}>{'>'}</Text></TouchableOpacity>
+                      </View>
+                      <View style={{flexDirection:'row',marginBottom:8}}>{dn.map(d=><View key={d} style={{flex:1,alignItems:'center'}}><Text style={{color:'#7A9A7A',fontSize:11,fontWeight:'600'}}>{d}</Text></View>)}</View>
+                      <View style={{flexDirection:'row',flexWrap:'wrap'}}>
+                        {cells.map((d,i)=>(
+                          <TouchableOpacity key={i} onPress={()=>{if(d){const ds=`${invCalYear}-${String(invCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;setInvoiceForm(f=>({...f,issueDate:ds}));setInvoiceDatePickerVisible(false);}}} style={{width:'14.28%',aspectRatio:1,alignItems:'center',justifyContent:'center',marginBottom:2}}>
+                            {d?<View style={{width:32,height:32,borderRadius:16,backgroundColor:isSel(d)?'#A8D4A8':'transparent',alignItems:'center',justifyContent:'center',borderWidth:isToday(d)&&!isSel(d)?1:0,borderColor:'#A8D4A8'}}><Text style={{color:isSel(d)?'#1C2E1C':'#fff',fontSize:14,fontWeight:isSel(d)||isToday(d)?'700':'400'}}>{d}</Text></View>:null}
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                      <TouchableOpacity onPress={()=>setInvoiceDatePickerVisible(false)} style={{marginTop:16,padding:12,alignItems:'center',borderTopWidth:1,borderTopColor:'#3D5A45'}}><Text style={{color:'#7A9A7A',fontSize:15}}>Cancel</Text></TouchableOpacity>
+                    </View>);
+                  })()}
+                </View>
+              </View>
+            </Modal>
+            <Modal visible={invoiceDueDatePickerVisible} transparent animationType='fade'>
+              <View style={{flex:1,backgroundColor:'rgba(0,0,0,0.6)',justifyContent:'center',alignItems:'center',padding:24}}>
+                <View style={{backgroundColor:'#1E3A28',borderRadius:16,padding:20,width:'100%',maxWidth:340}}>
+                  {(()=>{
+                    const mn=['January','February','March','April','May','June','July','August','September','October','November','December'];
+                    const dn=['Su','Mo','Tu','We','Th','Fr','Sa'];
+                    const fd=new Date(invDueCalYear,invDueCalMonth,1).getDay();
+                    const dim=new Date(invDueCalYear,invDueCalMonth+1,0).getDate();
+                    const cells=Array.from({length:fd+dim},(_,i)=>i<fd?null:i-fd+1);
+                    const isSel=(d)=>d&&invoiceForm.dueDate===`${invDueCalYear}-${String(invDueCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    const isToday=(d)=>{const t=new Date();return d&&t.getFullYear()===invDueCalYear&&t.getMonth()===invDueCalMonth&&t.getDate()===d;};
+                    return(<View>
+                      <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+                        <TouchableOpacity onPress={()=>{if(invDueCalMonth===0){setInvDueCalMonth(11);setInvDueCalYear(y=>y-1);}else setInvDueCalMonth(m=>m-1);}} style={{padding:8}}><Text style={{color:'#A8D4A8',fontSize:20}}>{'<'}</Text></TouchableOpacity>
+                        <Text style={{color:'#fff',fontSize:16,fontWeight:'600'}}>{mn[invDueCalMonth]} {invDueCalYear}</Text>
+                        <TouchableOpacity onPress={()=>{if(invDueCalMonth===11){setInvDueCalMonth(0);setInvDueCalYear(y=>y+1);}else setInvDueCalMonth(m=>m+1);}} style={{padding:8}}><Text style={{color:'#A8D4A8',fontSize:20}}>{'>'}</Text></TouchableOpacity>
+                      </View>
+                      <View style={{flexDirection:'row',marginBottom:8}}>{dn.map(d=><View key={d} style={{flex:1,alignItems:'center'}}><Text style={{color:'#7A9A7A',fontSize:11,fontWeight:'600'}}>{d}</Text></View>)}</View>
+                      <View style={{flexDirection:'row',flexWrap:'wrap'}}>
+                        {cells.map((d,i)=>(
+                          <TouchableOpacity key={i} onPress={()=>{if(d){const ds=`${invDueCalYear}-${String(invDueCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;setInvoiceForm(f=>({...f,dueDate:ds}));setInvoiceDueDatePickerVisible(false);}}} style={{width:'14.28%',aspectRatio:1,alignItems:'center',justifyContent:'center',marginBottom:2}}>
+                            {d?<View style={{width:32,height:32,borderRadius:16,backgroundColor:isSel(d)?'#A8D4A8':'transparent',alignItems:'center',justifyContent:'center',borderWidth:isToday(d)&&!isSel(d)?1:0,borderColor:'#A8D4A8'}}><Text style={{color:isSel(d)?'#1C2E1C':'#fff',fontSize:14,fontWeight:isSel(d)||isToday(d)?'700':'400'}}>{d}</Text></View>:null}
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                      <TouchableOpacity onPress={()=>setInvoiceDueDatePickerVisible(false)} style={{marginTop:16,padding:12,alignItems:'center',borderTopWidth:1,borderTopColor:'#3D5A45'}}><Text style={{color:'#7A9A7A',fontSize:15}}>Cancel</Text></TouchableOpacity>
+                    </View>);
+                  })()}
+                </View>
+              </View>
+            </Modal>
 <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12}}>LINE ITEMS</Text>
             {lines.map((line, i) => (
               <View key={i} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:12,borderWidth:1,borderColor:'#3D5A45'}}>
