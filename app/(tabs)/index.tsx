@@ -23,6 +23,12 @@ export default function HomeScreen() {
   const [showExpenseCategoryPicker, setShowExpenseCategoryPicker] = useState(false);
   const [showBillCategoryPicker, setShowBillCategoryPicker] = useState(false);
   const [billDatePickerVisible, setBillDatePickerVisible] = useState(false);
+  const [invoiceDatePickerVisible, setInvoiceDatePickerVisible] = useState(false);
+  const [invoiceDueDatePickerVisible, setInvoiceDueDatePickerVisible] = useState(false);
+  const [invCalYear, setInvCalYear] = useState(new Date().getFullYear());
+  const [invCalMonth, setInvCalMonth] = useState(new Date().getMonth());
+  const [invDueCalYear, setInvDueCalYear] = useState(new Date().getFullYear());
+  const [invDueCalMonth, setInvDueCalMonth] = useState(new Date().getMonth());
   const [billCalViewYear, setBillCalViewYear] = useState(new Date().getFullYear());
   const [billCalViewMonth, setBillCalViewMonth] = useState(new Date().getMonth());
   const [billDueDatePickerVisible, setBillDueDatePickerVisible] = useState(false);
@@ -46,7 +52,7 @@ export default function HomeScreen() {
   const [bills, setBills] = useState([]);
   const [lines, setLines] = useState([{ description:'', quantity:'1', unitPrice:'' }]);
   const [invoiceForm, setInvoiceForm] = useState({ clientName:'', clientEmail:'', poNumber:'', notes:'', taxRate:'', shipping:'', discount:'' });
-  const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), paymentMethod:'', receiptNumber:'' });
+  const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), paymentMethod:'', receiptNumber:'' const [invoiceForm, setInvoiceForm] = useState({ clientName:'', clientEmail:'', poNumber:'', notes:'', taxRate:'', shipping:'', discount:'', issueDate:new Date().toISOString().slice(0,10), dueDate:'' });});
   const [showPaymentMethodPicker, setShowPaymentMethodPicker] = useState(false);
   const [scanningReceipt, setScanningReceipt] = useState(false);
   const pendingReceiptBase64 = React.useRef<string|null>(null);
@@ -689,7 +695,15 @@ export default function HomeScreen() {
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>PO / WORK ORDER NUMBER (OPTIONAL)</Text>
             <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:24,borderWidth:1,borderColor:'#3D5A45'}} value={invoiceForm.poNumber} onChangeText={v=>setInvoiceForm(f=>({...f,poNumber:v}))} placeholder="PO-12345" placeholderTextColor="#7A9A7A" />
 
-            <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12}}>LINE ITEMS</Text>
+            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>INVOICE DATE</Text>
+            <TouchableOpacity onPress={()=>{setInvCalYear(new Date().getFullYear());setInvCalMonth(new Date().getMonth());setInvoiceDatePickerVisible(true);}} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+              <Text style={{color:invoiceForm.issueDate?'#fff':'#7A9A7A',fontSize:15}}>{invoiceForm.issueDate ? new Date(invoiceForm.issueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select date'}</Text>
+            </TouchableOpacity>
+            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DUE DATE (OPTIONAL)</Text>
+            <TouchableOpacity onPress={()=>{setInvDueCalYear(new Date().getFullYear());setInvDueCalMonth(new Date().getMonth());setInvoiceDueDatePickerVisible(true);}} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:24,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+              <Text style={{color:invoiceForm.dueDate?'#fff':'#7A9A7A',fontSize:15}}>{invoiceForm.dueDate ? new Date(invoiceForm.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select due date'}</Text>
+            </TouchableOpacity>
+<Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12}}>LINE ITEMS</Text>
             {lines.map((line, i) => (
               <View key={i} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:12,borderWidth:1,borderColor:'#3D5A45'}}>
                 <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
@@ -1210,6 +1224,7 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
 
 
 
