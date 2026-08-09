@@ -38,10 +38,10 @@ export default function HomeScreen() {
   const [showVendors, setShowVendors] = useState(false);
   const [customers, setCustomers] = useState([]);
   const [vendors, setVendors] = useState([]);
-  const [customerForm, setCustomerForm] = useState({ name:'', email:'', phone:'', salesperson:'' });
+  const [customerForm, setCustomerForm] = useState({ name:'', email:'', phone:'', salesperson:'', notes:'', dateAdded:new Date().toISOString().slice(0,10), lastContact:'' });
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
-  const [vendorForm, setVendorForm] = useState({ name:'', email:'', phone:'' });
+  const [vendorForm, setVendorForm] = useState({ name:'', email:'', phone:'', notes:'', dateAdded:new Date().toISOString().slice(0,10), lastContact:'' });
   const [showVendorForm, setShowVendorForm] = useState(false);
   const [editingVendor, setEditingVendor] = useState(null);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -1168,7 +1168,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             <Text style={{color:'#7A9A7A',fontSize:13,marginBottom:16}}>{customers.length} customer{customers.length!==1?'s':''}</Text>
-            <TouchableOpacity onPress={()=>{setCustomerForm({name:'',email:'',phone:'',salesperson:''});setEditingCustomer(null);setShowCustomerForm(true);}} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:14,alignItems:'center',marginBottom:16}}>
+            <TouchableOpacity onPress={()=>{setCustomerForm({name:'',email:'',phone:'',salesperson:'',notes:'',dateAdded:new Date().toISOString().slice(0,10),lastContact:''});setEditingCustomer(null);setShowCustomerForm(true);}} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:14,alignItems:'center',marginBottom:16}}>
               <Text style={{color:'#A8D4A8',fontSize:15,fontWeight:'600'}}>+ Add Customer</Text>
             </TouchableOpacity>
             {showCustomerForm&&(
@@ -1182,7 +1182,13 @@ export default function HomeScreen() {
                 <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:10,borderWidth:1,borderColor:'#3D5A45'}} value={customerForm.phone} onChangeText={v=>{const d=v.replace(/\D/g,'').slice(0,10);let p=d;if(d.length>=7)p='('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6);else if(d.length>=4)p='('+d.slice(0,3)+') '+d.slice(3);setCustomerForm(f=>({...f,phone:p}));}} placeholder='(555) 000-0000' placeholderTextColor='#7A9A7A' keyboardType='phone-pad' />
                 <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>SALESPERSON</Text>
                 <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={customerForm.salesperson} onChangeText={v=>setCustomerForm(f=>({...f,salesperson:v}))} placeholder='Jane Smith' placeholderTextColor='#7A9A7A' />
-                <View style={{flexDirection:'row',gap:10}}>
+                <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>DATE ADDED</Text>
+                <TouchableOpacity onPress={()=>{setShowCustomerDatePicker(true);}} style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between'}}>
+                  <Text style={{color:customerForm.dateAdded?'#fff':'#7A9A7A',fontSize:15}}>{customerForm.dateAdded ? new Date(customerForm.dateAdded+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select date'}</Text>
+                </TouchableOpacity>
+                <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>NOTES</Text>
+                <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',minHeight:80}} value={customerForm.notes} onChangeText={v=>setCustomerForm(f=>({...f,notes:v}))} placeholder='Notes about this customer' placeholderTextColor='#7A9A7A' multiline />
+<View style={{flexDirection:'row',gap:10}}>
                   <TouchableOpacity onPress={()=>setShowCustomerForm(false)} style={{flex:1,backgroundColor:'#3D5A45',borderRadius:10,padding:12,alignItems:'center'}}>
                     <Text style={{color:'#A8D4A8',fontSize:14}}>Cancel</Text>
                   </TouchableOpacity>
@@ -1285,6 +1291,7 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
+
 
 
 
