@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 
-const API = 'http://192.168.1.190:3001/api';
+const API = 'https://ledger-accounting-production.up.railway.app/api';
 
 export default function NewInvoiceScreen() {
   const router = useRouter();
