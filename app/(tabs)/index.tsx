@@ -15,6 +15,9 @@ function inPeriod(dateVal, period) {
   return true;
 }
 
+const EXPENSE_CATEGORIES = ['Advertising & Marketing','Bank Charges','Equipment','Insurance','Legal & Professional Fees','Meals & Entertainment','Office Supplies','Payroll','Rent & Lease','Software & Subscriptions','Taxes & Licenses','Travel','Utilities','Vehicle','Other'];
+const BILL_CATEGORIES = ['Rent & Lease','Utilities','Insurance','Loan Payment','Supplier Invoice','Equipment Lease','Professional Services','Payroll','Taxes','Software & Subscriptions','Other'];
+
 export default function HomeScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -181,6 +184,7 @@ export default function HomeScreen() {
   }
 
   async function saveExpense() {
+    if (scanningReceipt) return Alert.alert('Please wait', 'Still scanning your receipt — give it a moment, then tap Save.');
     if (!expenseForm.vendor || !expenseForm.amount) return Alert.alert('Error', 'Fill in vendor and amount');
     const receiptToUpload = pendingReceiptBase64.current; console.log('RECEIPT TO UPLOAD:', !!receiptToUpload, receiptToUpload ? receiptToUpload.slice(0,20) : 'null');
     try {
@@ -229,6 +233,18 @@ export default function HomeScreen() {
       });
       const j = await r.json();
       if (j.success) { setShowDetail(false); loadInvoices(org.id, token); Alert.alert('Paid!', 'Invoice marked as paid'); }
+      else Alert.alert('Error', j.message || 'Failed');
+    } catch(e) { Alert.alert('Error', 'Cannot connect'); }
+  }
+
+  async function setBillStatus(id, status) {
+    try {
+      const r = await fetch(API+'/orgs/'+org.id+'/bills/'+id, {
+        method:'PATCH', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body:JSON.stringify({status})
+      });
+      const j = await r.json();
+      if (j.success) { setShowBillDetail(false); loadBills(org.id, token); Alert.alert(status==='paid'?'Paid!':'Updated', status==='paid'?'Bill marked as paid':'Bill marked as unpaid'); }
       else Alert.alert('Error', j.message || 'Failed');
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
   }
@@ -313,7 +329,7 @@ export default function HomeScreen() {
 
   function editInvoice(inv) {
     setSelectedInvoice(inv);
-    setInvoiceForm({ clientName: inv.contact?.name||'', clientEmail: inv.contact?.email||'', poNumber: inv.poNumber||'', notes: inv.notes||'', taxRate: inv.taxRate||'', shipping: inv.shipping||'', discount: inv.discount||'' });
+    setInvoiceForm({ clientName: inv.contact?.name||'', clientEmail: inv.contact?.email||'', poNumber: inv.poNumber||'', notes: inv.notes||'', taxRate: inv.taxRate||'', shipping: inv.shipping||'', discount: inv.discount||'', salesperson: inv.salesperson||'' });
     setLines(inv.lines?.length ? inv.lines.map(l => ({ description: l.description, quantity: String(l.quantity), unitPrice: String(l.unitPrice) })) : [{ description:'', quantity:'1', unitPrice:'' }]);
     setEditingInvoice(true);
     setShowDetail(false);
@@ -342,7 +358,7 @@ export default function HomeScreen() {
   if (!user) {
     return (
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#2D4A35'}}>
-        <ScrollView contentContainerStyle={{flexGrow:1,alignItems:'center',justifyContent:'center',padding:24}}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{flexGrow:1,alignItems:'center',justifyContent:'center',padding:24}}>
           <Text style={{fontSize:32,fontWeight:'700',color:'#A8D4A8',marginBottom:2}}>Mountain Top</Text>
           <Text style={{fontSize:32,fontWeight:'700',color:'#A8D4A8',marginBottom:8}}>Ledger</Text>
           <Text style={{fontSize:14,color:'#7A9A7A',marginBottom:40}}>Built for where you are going</Text>
@@ -362,7 +378,7 @@ export default function HomeScreen() {
         </ScrollView>
         <Modal visible={showRegister} animationType="slide" presentationStyle="pageSheet">
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#2D4A35'}}>
-            <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:24,paddingTop:60}}>
               <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
                 <TouchableOpacity onPress={()=>setShowRegister(false)}>
                   <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
@@ -533,6 +549,7 @@ export default function HomeScreen() {
                   <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>CLIENT</Text>
                   <Text style={{color:'#fff',fontSize:16,fontWeight:'500'}}>{selectedInvoice.contact?.name || 'N/A'}</Text>
                   {selectedInvoice.contact?.email ? <Text style={{color:'#7A9A7A',fontSize:13,marginTop:2}}>{selectedInvoice.contact.email}</Text> : null}
+                  {selectedInvoice.salesperson ? <Text style={{color:'#7A9A7A',fontSize:13,marginTop:8}}>Salesperson: <Text style={{color:'#A8D4A8'}}>{selectedInvoice.salesperson}</Text></Text> : null}
                 </View>
                 {selectedInvoice.lines?.length > 0 && (
                   <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:16}}>
@@ -666,6 +683,10 @@ export default function HomeScreen() {
                   <Text style={{color:'#7A9A7A',fontSize:13}}>Status</Text>
                   <Text style={{color:selectedBill.status==='paid'?'#A8D4A8':'#ffd166',fontSize:13,fontWeight:'600',textTransform:'capitalize'}}>{selectedBill.status}</Text>
                 </View>
+                {selectedBill.status==='paid'
+                  ? <TouchableOpacity onPress={()=>setBillStatus(selectedBill.id,'pending')} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:14,alignItems:'center',marginBottom:12}}><Text style={{color:'#A8D4A8',fontSize:15,fontWeight:'600'}}>Mark as Unpaid</Text></TouchableOpacity>
+                  : <TouchableOpacity onPress={()=>setBillStatus(selectedBill.id,'paid')} style={{backgroundColor:'#1a4a2a',borderRadius:12,padding:14,alignItems:'center',marginBottom:12}}><Text style={{color:'#A8D4A8',fontSize:15,fontWeight:'600'}}>Mark as Paid</Text></TouchableOpacity>
+                }
                 {selectedBill.dueDate ? (
                   <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between'}}>
                     <Text style={{color:'#7A9A7A',fontSize:13}}>Due Date</Text>
@@ -687,7 +708,7 @@ export default function HomeScreen() {
       {/* New Invoice Modal */}
       <Modal visible={showInvoice} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
-          <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
               <TouchableOpacity onPress={()=>{setShowInvoice(false);setEditingInvoice(false);}}>
                 <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
@@ -705,7 +726,10 @@ export default function HomeScreen() {
             <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={invoiceForm.clientEmail} onChangeText={v=>setInvoiceForm(f=>({...f,clientEmail:v}))} placeholder="client@example.com" placeholderTextColor="#7A9A7A" keyboardType="email-address" autoCapitalize="none" />
 
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>PO / WORK ORDER NUMBER (OPTIONAL)</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:24,borderWidth:1,borderColor:'#3D5A45'}} value={invoiceForm.poNumber} onChangeText={v=>setInvoiceForm(f=>({...f,poNumber:v}))} placeholder="PO-12345" placeholderTextColor="#7A9A7A" />
+            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={invoiceForm.poNumber} onChangeText={v=>setInvoiceForm(f=>({...f,poNumber:v}))} placeholder="PO-12345" placeholderTextColor="#7A9A7A" />
+
+            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>SALESPERSON (OPTIONAL)</Text>
+            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:24,borderWidth:1,borderColor:'#3D5A45'}} value={invoiceForm.salesperson || ''} onChangeText={v=>setInvoiceForm(f=>({...f,salesperson:v}))} placeholder="Jane Smith" placeholderTextColor="#7A9A7A" />
 
             <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>INVOICE DATE</Text>
             <TouchableOpacity onPress={()=>{setInvCalYear(new Date().getFullYear());setInvCalMonth(new Date().getMonth());setInvoiceDatePickerVisible(true);}} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
@@ -838,14 +862,14 @@ export default function HomeScreen() {
       {/* Expense Modal */}
       <Modal visible={showExpense} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
-          <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
               <TouchableOpacity onPress={()=>{setShowExpense(false);setEditingExpense(false);}}>
                 <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
               </TouchableOpacity>
               <Text style={{color:'#fff',fontSize:17,fontWeight:'600'}}>{editingExpense ? 'Edit Expense' : 'New Expense'}</Text>
-              <TouchableOpacity onPress={saveExpense}>
-                <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Save</Text>
+              <TouchableOpacity onPress={saveExpense} disabled={scanningReceipt}>
+                <Text style={{color:scanningReceipt?'#5A7A5A':'#A8D4A8',fontSize:16,fontWeight:'600'}}>{scanningReceipt?'Scanning…':'Save'}</Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity onPress={async()=>{
@@ -888,7 +912,10 @@ export default function HomeScreen() {
               <View style={{backgroundColor:'#1E3A28',borderTopLeftRadius:20,borderTopRightRadius:20,padding:20,maxHeight:'60%'}}>
                 <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'700',marginBottom:16,textAlign:'center'}}>Select Category</Text>
                 <ScrollView>
-                  {['Advertising & Marketing','Bank Charges','Equipment','Insurance','Legal & Professional Fees','Meals & Entertainment','Office Supplies','Payroll','Rent & Lease','Software & Subscriptions','Taxes & Licenses','Travel','Utilities','Vehicle','Other'].map(cat=>(
+                  <TouchableOpacity onPress={()=>{Alert.prompt('New Category','Enter a category name',(text)=>{const t=(text||'').trim(); if(t){setExpenseForm(f=>({...f,category:t}));setShowExpenseCategoryPicker(false);}});}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:'#3D5A45',marginBottom:2}}>
+                    <Text style={{color:'#A8C4D4',fontSize:15,fontWeight:'600'}}>+ Add new category…</Text>
+                  </TouchableOpacity>
+                  {[...EXPENSE_CATEGORIES, ...[...new Set([...expenses,...bills].map(x=>x.category).filter(Boolean))].filter(c=>!EXPENSE_CATEGORIES.includes(c))].sort((a,b)=>a==='Other'?1:b==='Other'?-1:a.localeCompare(b)).map(cat=>(
                     <TouchableOpacity key={cat} onPress={()=>{setExpenseForm(f=>({...f,category:cat}));setShowExpenseCategoryPicker(false);}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:'#3D5A45',backgroundColor:expenseForm.category===cat?'#3D5A45':'transparent',borderRadius:8,marginBottom:2}}>
                       <Text style={{color:expenseForm.category===cat?'#A8D4A8':'#fff',fontSize:15}}>{cat}</Text>
                     </TouchableOpacity>
@@ -978,7 +1005,7 @@ export default function HomeScreen() {
       {/* Bill Modal */}
       <Modal visible={showBill} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
-          <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
               <TouchableOpacity onPress={()=>{setShowBill(false);setEditingBill(false);}}>
                 <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
@@ -1000,7 +1027,10 @@ export default function HomeScreen() {
               <View style={{backgroundColor:'#1E3A28',borderTopLeftRadius:20,borderTopRightRadius:20,padding:20,maxHeight:'60%'}}>
                 <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'700',marginBottom:16,textAlign:'center'}}>Select Category</Text>
                 <ScrollView>
-                  {['Rent & Lease','Utilities','Insurance','Loan Payment','Supplier Invoice','Equipment Lease','Professional Services','Payroll','Taxes','Software & Subscriptions','Other'].map(cat=>(
+                  <TouchableOpacity onPress={()=>{Alert.prompt('New Category','Enter a category name',(text)=>{const t=(text||'').trim(); if(t){setBillForm(f=>({...f,category:t}));setShowBillCategoryPicker(false);}});}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:'#3D5A45',marginBottom:2}}>
+                    <Text style={{color:'#A8C4D4',fontSize:15,fontWeight:'600'}}>+ Add new category…</Text>
+                  </TouchableOpacity>
+                  {[...BILL_CATEGORIES, ...[...new Set([...expenses,...bills].map(x=>x.category).filter(Boolean))].filter(c=>!BILL_CATEGORIES.includes(c))].sort((a,b)=>a==='Other'?1:b==='Other'?-1:a.localeCompare(b)).map(cat=>(
                     <TouchableOpacity key={cat} onPress={()=>{setBillForm(f=>({...f,category:cat}));setShowBillCategoryPicker(false);}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:'#3D5A45',backgroundColor:billForm.category===cat?'#3D5A45':'transparent',borderRadius:8,marginBottom:2}}>
                       <Text style={{color:billForm.category===cat?'#A8D4A8':'#fff',fontSize:15}}>{cat}</Text>
                     </TouchableOpacity>
@@ -1139,13 +1169,16 @@ export default function HomeScreen() {
             {(() => {
               const fInv = invoices.filter(i=>inPeriod(i.issueDate,reportPeriod));
               const fExp = expenses.filter(e=>inPeriod(e.date,reportPeriod));
+              const fPaidBills = bills.filter(b=>b.status==='paid' && inPeriod(b.billDate||b.dueDate||b.createdAt,reportPeriod));
               const invoiced = fInv.reduce((s,i)=>s+Number(i.total||0),0);
               const paid = fInv.filter(i=>i.status==='paid').reduce((s,i)=>s+Number(i.total||0),0);
               const outstanding = fInv.filter(i=>i.status!=='paid').reduce((s,i)=>s+Number(i.total||0),0);
-              const totalExp = fExp.reduce((s,e)=>s+Number(e.amount||0),0);
+              const costItems = [...fExp.map(e=>({category:e.category, amount:Number(e.amount||0)})), ...fPaidBills.map(b=>({category:b.category, amount:Number(b.amount||0)}))];
+              const totalExp = costItems.reduce((s,x)=>s+x.amount,0);
+              const owed = bills.filter(b=>b.status!=='paid').reduce((s,b)=>s+Number(b.amount||0),0);
               const net = paid - totalExp;
               const byCat = {};
-              fExp.forEach(e=>{ const c=e.category||'Other'; byCat[c]=(byCat[c]||0)+Number(e.amount||0); });
+              costItems.forEach(x=>{ const c=x.category||'Other'; byCat[c]=(byCat[c]||0)+x.amount; });
               const cats = Object.keys(byCat).sort((a,b)=>byCat[b]-byCat[a]);
               const card = {backgroundColor:'#F7FAF7',borderRadius:14,padding:18,marginBottom:16,borderWidth:1,borderColor:'#E4ECE4'};
               const hdr = {color:'#8A9A8A',fontSize:12,fontWeight:'700',letterSpacing:1,marginBottom:10};
@@ -1177,6 +1210,7 @@ export default function HomeScreen() {
                     {cats.length===0 && <Text style={{color:'#B0BCB0',fontSize:13,fontStyle:'italic'}}>No expenses in this period</Text>}
                   </View>
 
+                  {owed > 0 ? <Text style={{color:'#B7791F',fontSize:12,marginBottom:16}}>Unpaid bills still owed (not counted in profit): {fmt(owed)}</Text> : null}
                   <Text style={hdr}>NET INCOME</Text>
                   <View style={[card,{backgroundColor: net>=0?'#EAF6EE':'#FBEEEC', borderColor: net>=0?'#CDE9D6':'#F3D6D1'}]}>
                     {row('Revenue (paid)', paid, '#2D7A4A')}
@@ -1194,7 +1228,7 @@ export default function HomeScreen() {
       {/* Customers Modal */}
       <Modal visible={showCustomers} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
-          <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
               <Text style={{color:'#fff',fontSize:22,fontWeight:'700'}}>Customers</Text>
               <TouchableOpacity onPress={()=>setShowCustomers(false)}>
@@ -1264,7 +1298,7 @@ export default function HomeScreen() {
       {/* Vendors Modal */}
       <Modal visible={showVendors} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
-          <ScrollView contentContainerStyle={{padding:24,paddingTop:60}}>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
               <Text style={{color:'#fff',fontSize:22,fontWeight:'700'}}>Vendors</Text>
               <TouchableOpacity onPress={()=>setShowVendors(false)}>
