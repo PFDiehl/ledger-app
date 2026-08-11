@@ -4,6 +4,17 @@ import { View, Text, TouchableOpacity, TextInput, Alert, ScrollView, Modal, Keyb
 
 const API = 'https://ledger-accounting-production.up.railway.app/api';
 
+// Keep a record only if its date falls in the selected reporting period
+function inPeriod(dateVal, period) {
+  if (!dateVal || period === 'all') return true;
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return true;
+  const now = new Date();
+  if (period === 'month') return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  if (period === 'ytd')   return d.getFullYear() === now.getFullYear();
+  return true;
+}
+
 export default function HomeScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,6 +31,7 @@ export default function HomeScreen() {
   const [showBillDetail, setShowBillDetail] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [showReports, setShowReports] = useState(false);
+  const [reportPeriod, setReportPeriod] = useState('ytd');
   const [showExpenseCategoryPicker, setShowExpenseCategoryPicker] = useState(false);
   const [showBillCategoryPicker, setShowBillCategoryPicker] = useState(false);
   const [billDatePickerVisible, setBillDatePickerVisible] = useState(false);
@@ -1105,55 +1117,77 @@ export default function HomeScreen() {
 
       {/* Reports Modal */}
       <Modal visible={showReports} animationType="slide" presentationStyle="pageSheet">
-        <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
+        <ScrollView style={{flex:1,backgroundColor:'#ffffff'}}>
           <View style={{padding:24,paddingTop:60}}>
-            <TouchableOpacity onPress={()=>setShowReports(false)} style={{marginBottom:24}}>
-              <Text style={{color:'#A8D4A8',fontSize:16}}>Close</Text>
-            </TouchableOpacity>
-            <Text style={{color:'#fff',fontSize:28,fontWeight:'700',marginBottom:4}}>Reports</Text>
-            <Text style={{color:'#7A9A7A',fontSize:14,marginBottom:32}}>Financial summary</Text>
-            <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12}}>INCOME</Text>
-            <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:12}}>
-              <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:12}}>
-                <Text style={{color:'#7A9A7A',fontSize:14}}>Total Invoiced</Text>
-                <Text style={{color:'#A8D4A8',fontSize:14,fontWeight:'600'}}>{fmt(invoices.reduce((s,i)=>s+Number(i.total),0))}</Text>
-              </View>
-              <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:12}}>
-                <Text style={{color:'#7A9A7A',fontSize:14}}>Total Paid</Text>
-                <Text style={{color:'#A8D4A8',fontSize:14,fontWeight:'600'}}>{fmt(invoices.filter(i=>i.status==='paid').reduce((s,i)=>s+Number(i.total),0))}</Text>
-              </View>
-              <View style={{flexDirection:'row',justifyContent:'space-between'}}>
-                <Text style={{color:'#7A9A7A',fontSize:14}}>Outstanding</Text>
-                <Text style={{color:'#ffd166',fontSize:14,fontWeight:'600'}}>{fmt(invoices.filter(i=>i.status!=='paid').reduce((s,i)=>s+Number(i.total),0))}</Text>
-              </View>
+            <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+              <Text style={{color:'#14281D',fontSize:28,fontWeight:'700'}}>Reports</Text>
+              <TouchableOpacity onPress={()=>setShowReports(false)}>
+                <Text style={{color:'#2D7A4A',fontSize:16,fontWeight:'600'}}>Done</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12,marginTop:8}}>EXPENSES</Text>
-            <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:12}}>
-              <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:12}}>
-                <Text style={{color:'#7A9A7A',fontSize:14}}>Total Expenses</Text>
-                <Text style={{color:'#D4A8A8',fontSize:14,fontWeight:'600'}}>{fmt(expenses.reduce((s,e)=>s+Number(e.amount),0))}</Text>
-              </View>
-              <View style={{flexDirection:'row',justifyContent:'space-between'}}>
-                <Text style={{color:'#7A9A7A',fontSize:14}}>Total Bills</Text>
-                <Text style={{color:'#D4A8A8',fontSize:14,fontWeight:'600'}}>{fmt(bills.reduce((s,b)=>s+Number(b.amount),0))}</Text>
-              </View>
+            <Text style={{color:'#8A9A8A',fontSize:14,marginBottom:20}}>Profit & Loss summary</Text>
+
+            {/* Period toggle */}
+            <View style={{flexDirection:'row',backgroundColor:'#EEF3EE',borderRadius:10,padding:4,marginBottom:24}}>
+              {[{k:'month',l:'This Month'},{k:'ytd',l:'Year to Date'},{k:'all',l:'All Time'}].map(p=>(
+                <TouchableOpacity key={p.k} onPress={()=>setReportPeriod(p.k)} style={{flex:1,paddingVertical:8,borderRadius:8,alignItems:'center',backgroundColor: reportPeriod===p.k ? '#ffffff' : 'transparent', shadowColor:'#000', shadowOpacity: reportPeriod===p.k?0.08:0, shadowRadius:3, shadowOffset:{width:0,height:1}}}>
+                  <Text style={{fontSize:12.5,fontWeight:'600',color: reportPeriod===p.k ? '#14281D' : '#8A9A8A'}}>{p.l}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
-            <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12,marginTop:8}}>SUMMARY</Text>
-            <View style={{backgroundColor:'#1a3a2a',borderRadius:12,padding:20,marginBottom:24,borderWidth:1,borderColor:'#2D4A35'}}>
-              <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:12}}>
-                <Text style={{color:'#7A9A7A',fontSize:14}}>Total Revenue (Paid)</Text>
-                <Text style={{color:'#A8D4A8',fontSize:14,fontWeight:'600'}}>{fmt(invoices.filter(i=>i.status==='paid').reduce((s,i)=>s+Number(i.total),0))}</Text>
-              </View>
-              <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:12}}>
-                <Text style={{color:'#7A9A7A',fontSize:14}}>Total Expenses</Text>
-                <Text style={{color:'#D4A8A8',fontSize:14,fontWeight:'600'}}>{fmt(expenses.reduce((s,e)=>s+Number(e.amount),0))}</Text>
-              </View>
-              <View style={{height:1,backgroundColor:'#2D4A35',marginBottom:12}}/>
-              <View style={{flexDirection:'row',justifyContent:'space-between'}}>
-                <Text style={{color:'#fff',fontSize:16,fontWeight:'700'}}>Net Income</Text>
-                <Text style={{color:'#ffd166',fontSize:16,fontWeight:'700'}}>{fmt(invoices.filter(i=>i.status==='paid').reduce((s,i)=>s+Number(i.total),0) - expenses.reduce((s,e)=>s+Number(e.amount),0))}</Text>
-              </View>
-            </View>
+
+            {(() => {
+              const fInv = invoices.filter(i=>inPeriod(i.issueDate,reportPeriod));
+              const fExp = expenses.filter(e=>inPeriod(e.date,reportPeriod));
+              const invoiced = fInv.reduce((s,i)=>s+Number(i.total||0),0);
+              const paid = fInv.filter(i=>i.status==='paid').reduce((s,i)=>s+Number(i.total||0),0);
+              const outstanding = fInv.filter(i=>i.status!=='paid').reduce((s,i)=>s+Number(i.total||0),0);
+              const totalExp = fExp.reduce((s,e)=>s+Number(e.amount||0),0);
+              const net = paid - totalExp;
+              const byCat = {};
+              fExp.forEach(e=>{ const c=e.category||'Other'; byCat[c]=(byCat[c]||0)+Number(e.amount||0); });
+              const cats = Object.keys(byCat).sort((a,b)=>byCat[b]-byCat[a]);
+              const card = {backgroundColor:'#F7FAF7',borderRadius:14,padding:18,marginBottom:16,borderWidth:1,borderColor:'#E4ECE4'};
+              const hdr = {color:'#8A9A8A',fontSize:12,fontWeight:'700',letterSpacing:1,marginBottom:10};
+              const row = (label,val,color,bold)=>(
+                <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:bold?0:12}}>
+                  <Text style={{color: bold?'#14281D':'#5A6B5A',fontSize: bold?16:14,fontWeight: bold?'700':'400'}}>{label}</Text>
+                  <Text style={{color:color,fontSize: bold?20:14,fontWeight: bold?'700':'600'}}>{fmt(val)}</Text>
+                </View>
+              );
+              return (
+                <View>
+                  <Text style={hdr}>INCOME</Text>
+                  <View style={card}>
+                    {row('Total invoiced', invoiced, '#14281D')}
+                    {row('Paid', paid, '#2D7A4A')}
+                    {row('Outstanding', outstanding, '#B7791F')}
+                  </View>
+
+                  <Text style={hdr}>EXPENSES</Text>
+                  <View style={card}>
+                    {row('Total expenses', totalExp, '#C0392B')}
+                    {cats.length>0 && <View style={{height:1,backgroundColor:'#E4ECE4',marginVertical:10}}/>}
+                    {cats.map(c=>(
+                      <View key={c} style={{flexDirection:'row',justifyContent:'space-between',marginBottom:8}}>
+                        <Text style={{color:'#8A9A8A',fontSize:13}}>{c}</Text>
+                        <Text style={{color:'#9A5A52',fontSize:13,fontWeight:'500'}}>{fmt(byCat[c])}</Text>
+                      </View>
+                    ))}
+                    {cats.length===0 && <Text style={{color:'#B0BCB0',fontSize:13,fontStyle:'italic'}}>No expenses in this period</Text>}
+                  </View>
+
+                  <Text style={hdr}>NET INCOME</Text>
+                  <View style={[card,{backgroundColor: net>=0?'#EAF6EE':'#FBEEEC', borderColor: net>=0?'#CDE9D6':'#F3D6D1'}]}>
+                    {row('Revenue (paid)', paid, '#2D7A4A')}
+                    {row('Less expenses', totalExp, '#C0392B')}
+                    <View style={{height:1,backgroundColor: net>=0?'#CDE9D6':'#F3D6D1',marginVertical:12}}/>
+                    {row(net>=0?'Net profit':'Net loss', net, net>=0?'#2D7A4A':'#C0392B', true)}
+                  </View>
+                  <View style={{height:40}}/>
+                </View>
+              );
+            })()}
           </View>
         </ScrollView>
       </Modal>
