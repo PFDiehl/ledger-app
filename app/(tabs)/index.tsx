@@ -32,6 +32,12 @@ export default function HomeScreen() {
   const [showDetail, setShowDetail] = useState(false);
   const [showExpenseDetail, setShowExpenseDetail] = useState(false);
   const [showBillDetail, setShowBillDetail] = useState(false);
+  const [showInvoiceList, setShowInvoiceList] = useState(false);
+  const [showExpenseList, setShowExpenseList] = useState(false);
+  const [showBillList, setShowBillList] = useState(false);
+  const [pendingInvoiceNav, setPendingInvoiceNav] = useState(null);
+  const [pendingExpenseNav, setPendingExpenseNav] = useState(null);
+  const [pendingBillNav, setPendingBillNav] = useState(null);
   const [showRegister, setShowRegister] = useState(false);
   const [showReports, setShowReports] = useState(false);
   const [reportPeriod, setReportPeriod] = useState('ytd');
@@ -442,14 +448,14 @@ export default function HomeScreen() {
           <Text style={{color:'#7A9A7A',fontSize:11,marginTop:4}}>{expenses.length} expenses</Text>
         </View>
       </View>
-      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#2D4A35',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingInvoice(false);setInvoiceForm({clientName:'',clientEmail:'',poNumber:'',notes:'',taxRate:'',shipping:'',discount:''});setLines([{description:'',quantity:'1',unitPrice:''}]);setShowInvoice(true);}}>
-        <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>+ New Invoice</Text>
+      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#2D4A35',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>setShowInvoiceList(true)}>
+        <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Invoices</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingExpense(false);setExpenseForm({vendor:'',amount:'',description:'',category:'',date:new Date().toISOString().slice(0,10),paymentMethod:'',receiptNumber:''});setShowExpense(true);}}>
-        <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>+ Add Expense</Text>
+      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>setShowExpenseList(true)}>
+        <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Expenses</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#4A3D2D',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>{setEditingBill(false);setBillForm({vendor:'',amount:'',description:'',category:'',billDate:new Date().toISOString().slice(0,10),dueDate:''});setShowBill(true);}}>
-        <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>+ Add Bill</Text>
+      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#4A3D2D',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>setShowBillList(true)}>
+        <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>Bills</Text>
       </TouchableOpacity>
       <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#1C3A4A',borderRadius:12,padding:16,alignItems:'center',marginBottom:24}} onPress={()=>setShowReports(true)}>
         <Text style={{color:'#A8C4D4',fontSize:16,fontWeight:'600'}}>View Reports</Text>
@@ -461,53 +467,96 @@ export default function HomeScreen() {
         <Text style={{color:'#C4A8D4',fontSize:16,fontWeight:'600'}}>Vendors</Text>
       </TouchableOpacity>
 
-      {invoices.length > 0 && (
-        <View style={{paddingHorizontal:24}}>
-          <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12}}>RECENT INVOICES</Text>
-          {invoices.slice(0,5).map(inv => (
-            <TouchableOpacity key={inv.id} onPress={()=>{setSelectedInvoice(inv);setShowDetail(true);}} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-              <View>
-                <Text style={{color:'#fff',fontWeight:'500'}}>{inv.contact?.name || 'Client'}</Text>
-                <Text style={{color:'#7A9A7A',fontSize:12,marginTop:2}}>{inv.invoiceNumber}</Text>
-              </View>
-              <View style={{alignItems:'flex-end'}}>
-                <Text style={{color: inv.status==='paid' ? '#A8D4A8' : '#ffd166',fontWeight:'600'}}>{fmt(inv.total)}</Text>
-                <Text style={{color:'#7A9A7A',fontSize:11,marginTop:2,textTransform:'capitalize'}}>{inv.status}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+      {/* Invoices now live in the Invoices list screen */}
 
-      {expenses.length > 0 && (
-        <View style={{paddingHorizontal:24,marginTop:16}}>
-          <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12}}>RECENT EXPENSES</Text>
-          {expenses.slice(0,5).map(exp => (
-            <TouchableOpacity key={exp.id} onPress={()=>{setSelectedExpense(exp);setShowExpenseDetail(true);}} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-              <View>
-                <Text style={{color:'#fff',fontWeight:'500'}}>{exp.vendor}</Text>
-                <Text style={{color:'#7A9A7A',fontSize:12,marginTop:2}}>{exp.category}</Text>
-              </View>
-              <Text style={{color:'#A8D4A8',fontWeight:'600'}}>{fmt(exp.amount)}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+      {/* Expenses and Bills now live in their own list screens */}
 
-      {bills.length > 0 && (
-        <View style={{paddingHorizontal:24,marginTop:16,marginBottom:24}}>
-          <Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12}}>RECENT BILLS</Text>
-          {bills.slice(0,5).map(bill => (
-            <TouchableOpacity key={bill.id} onPress={()=>{setSelectedBill(bill);setShowBillDetail(true);}} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-              <View>
-                <Text style={{color:'#fff',fontWeight:'500'}}>{bill.vendor}</Text>
-                <Text style={{color:'#7A9A7A',fontSize:12,marginTop:2}}>{bill.status}</Text>
-              </View>
-              <Text style={{color:'#D4A8A8',fontWeight:'600'}}>{fmt(bill.amount)}</Text>
+      {/* Invoices List Modal */}
+      <Modal visible={showInvoiceList} animationType="slide" presentationStyle="pageSheet" onDismiss={()=>{
+        if(pendingInvoiceNav?.type==='add'){ setEditingInvoice(false); setInvoiceForm({clientName:'',clientEmail:'',poNumber:'',notes:'',taxRate:'',shipping:'',discount:''}); setLines([{description:'',quantity:'1',unitPrice:''}]); setShowInvoice(true); }
+        else if(pendingInvoiceNav?.type==='view'){ setSelectedInvoice(pendingInvoiceNav.inv); setShowDetail(true); }
+        setPendingInvoiceNav(null);
+      }}>
+        <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
+          <View style={{padding:24,paddingTop:60}}>
+            <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+              <Text style={{color:'#fff',fontSize:24,fontWeight:'700'}}>Invoices</Text>
+              <TouchableOpacity onPress={()=>setShowInvoiceList(false)}><Text style={{color:'#7A9A7A',fontSize:16}}>Close</Text></TouchableOpacity>
+            </View>
+            <TouchableOpacity onPress={()=>{setPendingInvoiceNav({type:'add'});setShowInvoiceList(false);}} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,alignItems:'center',marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}}>
+              <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>+ Add Invoice</Text>
             </TouchableOpacity>
-          ))}
-        </View>
-      )}
+            {invoices.length===0 ? <Text style={{color:'#7A9A7A',fontSize:14,textAlign:'center',marginTop:20}}>No invoices yet</Text> : invoices.map(inv => (
+              <TouchableOpacity key={inv.id} onPress={()=>{setPendingInvoiceNav({type:'view',inv});setShowInvoiceList(false);}} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+                <View>
+                  <Text style={{color:'#fff',fontWeight:'500'}}>{inv.contact?.name || 'Client'}</Text>
+                  <Text style={{color:'#7A9A7A',fontSize:12,marginTop:2}}>{inv.invoiceNumber}</Text>
+                </View>
+                <View style={{alignItems:'flex-end'}}>
+                  <Text style={{color: inv.status==='paid' ? '#A8D4A8' : '#ffd166',fontWeight:'600'}}>{fmt(inv.total)}</Text>
+                  <Text style={{color:'#7A9A7A',fontSize:11,marginTop:2,textTransform:'capitalize'}}>{inv.status}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </Modal>
+
+      {/* Expenses List Modal */}
+      <Modal visible={showExpenseList} animationType="slide" presentationStyle="pageSheet" onDismiss={()=>{
+        if(pendingExpenseNav?.type==='add'){ setEditingExpense(false); setExpenseForm({vendor:'',amount:'',description:'',category:'',date:new Date().toISOString().slice(0,10),paymentMethod:'',receiptNumber:''}); setShowExpense(true); }
+        else if(pendingExpenseNav?.type==='view'){ setSelectedExpense(pendingExpenseNav.item); setShowExpenseDetail(true); }
+        setPendingExpenseNav(null);
+      }}>
+        <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
+          <View style={{padding:24,paddingTop:60}}>
+            <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+              <Text style={{color:'#fff',fontSize:24,fontWeight:'700'}}>Expenses</Text>
+              <TouchableOpacity onPress={()=>setShowExpenseList(false)}><Text style={{color:'#7A9A7A',fontSize:16}}>Close</Text></TouchableOpacity>
+            </View>
+            <TouchableOpacity onPress={()=>{setPendingExpenseNav({type:'add'});setShowExpenseList(false);}} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginBottom:16}}>
+              <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>+ Add Expense</Text>
+            </TouchableOpacity>
+            {expenses.length===0 ? <Text style={{color:'#7A9A7A',fontSize:14,textAlign:'center',marginTop:20}}>No expenses yet</Text> : expenses.map(exp => (
+              <TouchableOpacity key={exp.id} onPress={()=>{setPendingExpenseNav({type:'view',item:exp});setShowExpenseList(false);}} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+                <View>
+                  <Text style={{color:'#fff',fontWeight:'500'}}>{exp.vendor}</Text>
+                  <Text style={{color:'#7A9A7A',fontSize:12,marginTop:2}}>{exp.category}</Text>
+                </View>
+                <Text style={{color:'#A8D4A8',fontWeight:'600'}}>{fmt(exp.amount)}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </Modal>
+
+      {/* Bills List Modal */}
+      <Modal visible={showBillList} animationType="slide" presentationStyle="pageSheet" onDismiss={()=>{
+        if(pendingBillNav?.type==='add'){ setEditingBill(false); setBillForm({vendor:'',amount:'',description:'',category:'',billDate:new Date().toISOString().slice(0,10),dueDate:''}); setShowBill(true); }
+        else if(pendingBillNav?.type==='view'){ setSelectedBill(pendingBillNav.item); setShowBillDetail(true); }
+        setPendingBillNav(null);
+      }}>
+        <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
+          <View style={{padding:24,paddingTop:60}}>
+            <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+              <Text style={{color:'#fff',fontSize:24,fontWeight:'700'}}>Bills</Text>
+              <TouchableOpacity onPress={()=>setShowBillList(false)}><Text style={{color:'#7A9A7A',fontSize:16}}>Close</Text></TouchableOpacity>
+            </View>
+            <TouchableOpacity onPress={()=>{setPendingBillNav({type:'add'});setShowBillList(false);}} style={{backgroundColor:'#4A3D2D',borderRadius:12,padding:16,alignItems:'center',marginBottom:16}}>
+              <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>+ Add Bill</Text>
+            </TouchableOpacity>
+            {bills.length===0 ? <Text style={{color:'#7A9A7A',fontSize:14,textAlign:'center',marginTop:20}}>No bills yet</Text> : bills.map(bill => (
+              <TouchableOpacity key={bill.id} onPress={()=>{setPendingBillNav({type:'view',item:bill});setShowBillList(false);}} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+                <View>
+                  <Text style={{color:'#fff',fontWeight:'500'}}>{bill.vendor}</Text>
+                  <Text style={{color:'#7A9A7A',fontSize:12,marginTop:2,textTransform:'capitalize'}}>{bill.status}</Text>
+                </View>
+                <Text style={{color:'#D4A8A8',fontWeight:'600'}}>{fmt(bill.amount)}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </Modal>
 
       {/* Invoice Detail Modal */}
       <Modal visible={showDetail} animationType="slide" presentationStyle="pageSheet">
