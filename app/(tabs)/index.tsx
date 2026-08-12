@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, TouchableOpacity, TextInput, Alert, ScrollView, Modal, KeyboardAvoidingView, Platform, Image } from 'react-native';
 
 const API = 'https://ledger-accounting-production.up.railway.app/api';
@@ -47,6 +48,7 @@ export default function HomeScreen() {
   const [pendingBillNav, setPendingBillNav] = useState(null);
   const [themeKey, setThemeKey] = useState('O');
   const t = THEMES[themeKey] || THEMES.O;
+  useEffect(() => { AsyncStorage.getItem('themeKey').then(v => { if (v && THEMES[v]) setThemeKey(v); }).catch(()=>{}); }, []);
   const [showRegister, setShowRegister] = useState(false);
   const [showReports, setShowReports] = useState(false);
   const [reportPeriod, setReportPeriod] = useState('ytd');
@@ -467,7 +469,7 @@ export default function HomeScreen() {
         <Text style={{color:t.sub,fontSize:11,fontWeight:'700',letterSpacing:1,marginBottom:10}}>THEME</Text>
         <View style={{flexDirection:'row',gap:10}}>
           {Object.values(THEMES).map(th=>(
-            <TouchableOpacity key={th.key} onPress={()=>setThemeKey(th.key)} style={{flex:1,backgroundColor:th.card,borderRadius:12,borderWidth:themeKey===th.key?2:1,borderColor:themeKey===th.key?th.accent:t.border,padding:12,alignItems:'center'}}>
+            <TouchableOpacity key={th.key} onPress={()=>{setThemeKey(th.key); AsyncStorage.setItem('themeKey', th.key).catch(()=>{});}} style={{flex:1,backgroundColor:th.card,borderRadius:12,borderWidth:themeKey===th.key?2:1,borderColor:themeKey===th.key?th.accent:t.border,padding:12,alignItems:'center'}}>
               <View style={{flexDirection:'row',gap:4,marginBottom:8}}>
                 <View style={{width:14,height:14,borderRadius:7,backgroundColor:th.bg,borderWidth:1,borderColor:'rgba(128,128,128,0.3)'}}/>
                 <View style={{width:14,height:14,borderRadius:7,backgroundColor:th.accent}}/>
