@@ -17,6 +17,29 @@ function inPeriod(dateVal, period) {
 }
 
 const EXPENSE_CATEGORIES = ['Advertising & Marketing','Bank Charges','Equipment','Insurance','Legal & Professional Fees','Meals & Entertainment','Office Supplies','Payroll','Rent & Lease','Software & Subscriptions','Taxes & Licenses','Travel','Utilities','Vehicle','Other'];
+
+// Recurring schedule options (stored on-device)
+const FREQUENCIES = [
+  { key:'', label:'One-time (does not repeat)' },
+  { key:'weekly', label:'Weekly' },
+  { key:'biweekly', label:'Every 2 weeks' },
+  { key:'monthly', label:'Monthly' },
+  { key:'quarterly', label:'Quarterly' },
+  { key:'yearly', label:'Yearly' },
+];
+const freqLabel = (k) => (FREQUENCIES.find(f=>f.key===k)?.label) || '';
+// Advance a YYYY-MM-DD date string by one interval of the given frequency
+function advanceDate(dateStr, freq) {
+  const base = dateStr && !isNaN(new Date(dateStr+'T12:00:00')) ? new Date(dateStr+'T12:00:00') : new Date();
+  const d = new Date(base);
+  if (freq==='weekly') d.setDate(d.getDate()+7);
+  else if (freq==='biweekly') d.setDate(d.getDate()+14);
+  else if (freq==='monthly') d.setMonth(d.getMonth()+1);
+  else if (freq==='quarterly') d.setMonth(d.getMonth()+3);
+  else if (freq==='yearly') d.setFullYear(d.getFullYear()+1);
+  else return dateStr;
+  return d.toISOString().slice(0,10);
+}
 const BILL_CATEGORIES = ['Rent & Lease','Utilities','Insurance','Loan Payment','Supplier Invoice','Equipment Lease','Professional Services','Payroll','Taxes','Software & Subscriptions','Other'];
 
 // App color themes. O = Original forest green (default), B = Evergreen (light), C = Slate (premium dark).
@@ -49,6 +72,12 @@ export default function HomeScreen() {
   const [themeKey, setThemeKey] = useState('O');
   const t = THEMES[themeKey] || THEMES.O;
   useEffect(() => { AsyncStorage.getItem('themeKey').then(v => { if (v && THEMES[v]) setThemeKey(v); }).catch(()=>{}); }, []);
+  useEffect(() => { AsyncStorage.getItem('recurringRules').then(v => { if (v) { try { setRecurringRules(JSON.parse(v)||[]); } catch(e){} } }).catch(()=>{}); }, []);
+  useEffect(() => {
+    if (!org || !token || recurringChecked.current || !recurringRules.length) return;
+    recurringChecked.current = true;
+    setTimeout(() => { checkRecurringDue(); }, 900);
+  }, [org, token, recurringRules]);
   const [showRegister, setShowRegister] = useState(false);
   const [showReports, setShowReports] = useState(false);
   const [reportPeriod, setReportPeriod] = useState('ytd');
@@ -82,8 +111,13 @@ export default function HomeScreen() {
   const [invoices, setInvoices] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [bills, setBills] = useState([]);
-  const [lines, setLines] = useState([{ description:'', quantity:'1', unitPrice:'' }]);
-  const [invoiceForm, setInvoiceForm] = useState({ clientName:'', clientEmail:'', poNumber:'', notes:'', taxRate:'', shipping:'', discount:'', issueDate:new Date().toISOString().slice(0,10), dueDate:'' });
+  const [lines, setLines] = useState([{ description:'', quantity:'1', unitPrice:'', service:'', taxable:true }]);
+  const [servicePickerLine, setServicePickerLine] = useState(null);
+  const [recurringRules, setRecurringRules] = useState([]);
+  const [showInvoiceRepeatPicker, setShowInvoiceRepeatPicker] = useState(false);
+  const [showBillRepeatPicker, setShowBillRepeatPicker] = useState(false);
+  const recurringChecked = React.useRef(false);
+  const [invoiceForm, setInvoiceForm] = useState({ clientName:'', clientEmail:'', poNumber:'', notes:'', taxRate:'', shipping:'', discount:'', issueDate:new Date().toISOString().slice(0,10), dueDate:'', recurring:'' });
   const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), paymentMethod:'', receiptNumber:'' });
   const [showPaymentMethodPicker, setShowPaymentMethodPicker] = useState(false);
   const [scanningReceipt, setScanningReceipt] = useState(false);
@@ -92,7 +126,7 @@ export default function HomeScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [calViewYear, setCalViewYear] = useState(new Date().getFullYear());
   const [calViewMonth, setCalViewMonth] = useState(new Date().getMonth());
-  const [billForm, setBillForm] = useState({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10) });
+  const [billForm, setBillForm] = useState({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), recurring:'' });
   const [regForm, setRegForm] = useState({ fullName:'', orgName:'', email:'', password:'' });
   const [editingInvoice, setEditingInvoice] = useState(false);
   const [editingExpense, setEditingExpense] = useState(false);
@@ -168,13 +202,70 @@ export default function HomeScreen() {
     } catch(e) {}
   }
 
-  function addLine() { setLines(l => [...l, { description:'', quantity:'1', unitPrice:'' }]); }
+  // ---- Recurring schedules (stored on-device) ----
+  function persistRules(rules) { setRecurringRules(rules); AsyncStorage.setItem('recurringRules', JSON.stringify(rules)).catch(()=>{}); }
+  function ruleForRecord(type, id) { return recurringRules.find(r => r.type===type && r.sourceId===id); }
+  // Create/update/remove a rule for a saved record based on chosen frequency
+  function upsertRule({ type, sourceId, freq, anchorDate, label, payload }) {
+    const others = recurringRules.filter(r => !(r.type===type && r.sourceId===sourceId));
+    if (!freq) { persistRules(others); return; }
+    const rule = { id: String(Date.now())+'_'+Math.floor(Math.random()*10000), type, sourceId, freq, nextRun: advanceDate(anchorDate, freq), label, payload };
+    persistRules([...others, rule]);
+  }
+
+  async function generateFromRule(rule) {
+    try {
+      if (rule.type==='invoice') {
+        const body = { ...rule.payload, issueDate: new Date().toISOString().slice(0,10) };
+        const r = await fetch(API+'/orgs/'+org.id+'/invoices', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify(body) });
+        const j = await r.json();
+        if (j.success) { loadInvoices(org.id, token); return true; }
+      } else {
+        const body = { ...rule.payload, dueDate: new Date().toISOString().slice(0,10), date: new Date().toISOString().slice(0,10) };
+        const r = await fetch(API+'/orgs/'+org.id+'/bills', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify(body) });
+        const j = await r.json();
+        if (j.success) { loadBills(org.id, token); return true; }
+      }
+    } catch(e) {}
+    return false;
+  }
+
+  // On load, ask about each recurring item that's due (one prompt at a time)
+  function checkRecurringDue() {
+    const today = new Date().toISOString().slice(0,10);
+    let working = recurringRules.slice();
+    const due = working.filter(r => r.nextRun && r.nextRun <= today);
+    if (!due.length) return;
+    let idx = 0;
+    const advance = (rule) => { working = working.map(r => r.id===rule.id ? { ...r, nextRun: advanceDate(rule.nextRun, rule.freq) } : r); persistRules(working); };
+    const next = () => {
+      if (idx >= due.length) return;
+      const rule = due[idx]; idx++;
+      const kind = rule.type==='invoice' ? 'invoice' : 'bill';
+      const amt = rule.type==='invoice'
+        ? (rule.payload?.lines||[]).reduce((s,l)=>s+Number(l.quantity||0)*Number(l.unitPrice||0),0)
+        : Number(rule.payload?.amount||0);
+      Alert.alert(
+        'Recurring '+kind+' due',
+        (rule.label||kind)+' — '+freqLabel(rule.freq)+(amt?(' · '+fmt(amt)):'')+'.\n\nCreate this '+kind+' now?',
+        [
+          { text:'Create', onPress: async ()=>{ const ok = await generateFromRule(rule); if(ok){ advance(rule); } setTimeout(next, 400); } },
+          { text:'Skip this one', onPress: ()=>{ advance(rule); setTimeout(next, 250); } },
+          { text:'Later', style:'cancel', onPress: ()=>{ setTimeout(next, 250); } },
+        ]
+      );
+    };
+    next();
+  }
+
+  function addLine() { setLines(l => [...l, { description:'', quantity:'1', unitPrice:'', service:'', taxable:true }]); }
   function removeLine(i) { setLines(l => l.filter((_, idx) => idx !== i)); }
   function updateLine(i, field, value) { setLines(l => l.map((line, idx) => idx === i ? {...line, [field]: value} : line)); }
 
   const invoiceTotal = () => {
     const sub = lines.reduce((s, l) => s + (Number(l.quantity||0) * Number(l.unitPrice||0)), 0);
-    const tax = sub * (Number(invoiceForm.taxRate||0) / 100);
+    const taxableSub = lines.reduce((s, l) => s + (l.taxable===false ? 0 : Number(l.quantity||0) * Number(l.unitPrice||0)), 0);
+    const tax = taxableSub * (Number(invoiceForm.taxRate||0) / 100);
     return sub + tax + Number(invoiceForm.shipping||0) - Number(invoiceForm.discount||0);
   };
 
@@ -191,11 +282,20 @@ export default function HomeScreen() {
       });
       const j = await r.json();
       if (j.success) {
+        const recordId = editingInvoice ? selectedInvoice.id : (j.data?.id);
+        if (recordId) {
+          upsertRule({
+            type:'invoice', sourceId: recordId, freq: invoiceForm.recurring,
+            anchorDate: invoiceForm.issueDate || new Date().toISOString().slice(0,10),
+            label: invoiceForm.clientName,
+            payload: { clientName:invoiceForm.clientName, clientEmail:invoiceForm.clientEmail, poNumber:invoiceForm.poNumber, notes:invoiceForm.notes, taxRate:invoiceForm.taxRate, shipping:invoiceForm.shipping, discount:invoiceForm.discount, salesperson:invoiceForm.salesperson||'', lines: lines.map(l=>({description:l.description,quantity:l.quantity,unitPrice:l.unitPrice,service:l.service||'',taxable:l.taxable!==false})) }
+          });
+        }
         setShowInvoice(false); setEditingInvoice(false);
-        setInvoiceForm({ clientName:'', clientEmail:'', poNumber:'', notes:'', taxRate:'', shipping:'', discount:'', issueDate:new Date().toISOString().slice(0,10), dueDate:'' });
-        setLines([{ description:'', quantity:'1', unitPrice:'' }]);
+        setInvoiceForm({ clientName:'', clientEmail:'', poNumber:'', notes:'', taxRate:'', shipping:'', discount:'', issueDate:new Date().toISOString().slice(0,10), dueDate:'', recurring:'' });
+        setLines([{ description:'', quantity:'1', unitPrice:'', service:'', taxable:true }]);
         loadInvoices(org.id, token);
-        Alert.alert('Saved!', editingInvoice ? 'Invoice updated' : 'Invoice created');
+        Alert.alert('Saved!', (editingInvoice ? 'Invoice updated' : 'Invoice created') + (invoiceForm.recurring ? '\nRepeats '+freqLabel(invoiceForm.recurring).toLowerCase()+'.' : ''));
       } else Alert.alert('Error', j.message || 'Failed');
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
   }
@@ -234,10 +334,19 @@ export default function HomeScreen() {
       const r = await fetch(url, { method, headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify(billForm) });
       const j = await r.json();
       if (j.success) {
+        const recordId = editingBill ? selectedBill.id : (j.data?.id);
+        if (recordId) {
+          upsertRule({
+            type:'bill', sourceId: recordId, freq: billForm.recurring,
+            anchorDate: billForm.dueDate || billForm.date || new Date().toISOString().slice(0,10),
+            label: billForm.vendor,
+            payload: { vendor:billForm.vendor, amount:billForm.amount, description:billForm.description, category:billForm.category }
+          });
+        }
         setShowBill(false); setEditingBill(false);
-        setBillForm({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10) });
+        setBillForm({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), recurring:'' });
         loadBills(org.id, token);
-        Alert.alert('Saved!', editingBill ? 'Bill updated' : 'Bill recorded');
+        Alert.alert('Saved!', (editingBill ? 'Bill updated' : 'Bill recorded') + (billForm.recurring ? '\nRepeats '+freqLabel(billForm.recurring).toLowerCase()+'.' : ''));
       } else Alert.alert('Error', j.message || 'Failed');
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
   }
@@ -309,7 +418,7 @@ export default function HomeScreen() {
         try {
           const r = await fetch(API+'/orgs/'+org.id+'/invoices/'+id, { method:'DELETE', headers:{'Authorization':'Bearer '+token} });
           const j = await r.json();
-          if (j.success) { setShowDetail(false); loadInvoices(org.id, token); Alert.alert('Deleted', 'Invoice removed'); }
+          if (j.success) { persistRules(recurringRules.filter(rr=>!(rr.type==='invoice'&&rr.sourceId===id))); setShowDetail(false); loadInvoices(org.id, token); Alert.alert('Deleted', 'Invoice removed'); }
           else Alert.alert('Error', j.message || 'Failed');
         } catch(e) { Alert.alert('Error', 'Cannot connect'); }
       }}
@@ -337,7 +446,7 @@ export default function HomeScreen() {
         try {
           const r = await fetch(API+'/orgs/'+org.id+'/bills/'+id, { method:'DELETE', headers:{'Authorization':'Bearer '+token} });
           const j = await r.json();
-          if (j.success) { setShowBillDetail(false); loadBills(org.id, token); Alert.alert('Deleted', 'Bill removed'); }
+          if (j.success) { persistRules(recurringRules.filter(rr=>!(rr.type==='bill'&&rr.sourceId===id))); setShowBillDetail(false); loadBills(org.id, token); Alert.alert('Deleted', 'Bill removed'); }
           else Alert.alert('Error', j.message || 'Failed');
         } catch(e) { Alert.alert('Error', 'Cannot connect'); }
       }}
@@ -346,8 +455,8 @@ export default function HomeScreen() {
 
   function editInvoice(inv) {
     setSelectedInvoice(inv);
-    setInvoiceForm({ clientName: inv.contact?.name||'', clientEmail: inv.contact?.email||'', poNumber: inv.poNumber||'', notes: inv.notes||'', taxRate: inv.taxRate||'', shipping: inv.shipping||'', discount: inv.discount||'', salesperson: inv.salesperson||'' });
-    setLines(inv.lines?.length ? inv.lines.map(l => ({ description: l.description, quantity: String(l.quantity), unitPrice: String(l.unitPrice) })) : [{ description:'', quantity:'1', unitPrice:'' }]);
+    setInvoiceForm({ clientName: inv.contact?.name||'', clientEmail: inv.contact?.email||'', poNumber: inv.poNumber||'', notes: inv.notes||'', taxRate: inv.taxRate||'', shipping: inv.shipping||'', discount: inv.discount||'', salesperson: inv.salesperson||'', recurring: ruleForRecord('invoice', inv.id)?.freq || '' });
+    setLines(inv.lines?.length ? inv.lines.map(l => ({ description: l.description, quantity: String(l.quantity), unitPrice: String(l.unitPrice), service: l.service || '', taxable: l.taxable !== false })) : [{ description:'', quantity:'1', unitPrice:'', service:'', taxable:true }]);
     setEditingInvoice(true);
     setShowDetail(false);
     setShowInvoice(true);
@@ -364,7 +473,7 @@ export default function HomeScreen() {
 
   function editBill(bill) {
     setSelectedBill(bill);
-    setBillForm({ vendor: bill.vendor||'', amount: String(bill.amount)||'', description: bill.description||'', category: bill.category||'', billDate: bill.billDate ? new Date(bill.billDate).toISOString().slice(0,10) : new Date().toISOString().slice(0,10), dueDate: bill.dueDate ? new Date(bill.dueDate).toISOString().slice(0,10) : '' });
+    setBillForm({ vendor: bill.vendor||'', amount: String(bill.amount)||'', description: bill.description||'', category: bill.category||'', billDate: bill.billDate ? new Date(bill.billDate).toISOString().slice(0,10) : new Date().toISOString().slice(0,10), dueDate: bill.dueDate ? new Date(bill.dueDate).toISOString().slice(0,10) : '', recurring: ruleForRecord('bill', bill.id)?.freq || '' });
     setEditingBill(true);
     setShowBillDetail(false);
     setShowBill(true);
@@ -487,7 +596,7 @@ export default function HomeScreen() {
 
       {/* Invoices List Modal */}
       <Modal visible={showInvoiceList} animationType="slide" presentationStyle="pageSheet" onDismiss={()=>{
-        if(pendingInvoiceNav?.type==='add'){ setEditingInvoice(false); setInvoiceForm({clientName:'',clientEmail:'',poNumber:'',notes:'',taxRate:'',shipping:'',discount:''}); setLines([{description:'',quantity:'1',unitPrice:''}]); setShowInvoice(true); }
+        if(pendingInvoiceNav?.type==='add'){ setEditingInvoice(false); setInvoiceForm({clientName:'',clientEmail:'',poNumber:'',notes:'',taxRate:'',shipping:'',discount:'',issueDate:new Date().toISOString().slice(0,10),dueDate:'',recurring:''}); setLines([{description:'',quantity:'1',unitPrice:'',service:'',taxable:true}]); setShowInvoice(true); }
         else if(pendingInvoiceNav?.type==='view'){ setSelectedInvoice(pendingInvoiceNav.inv); setShowDetail(true); }
         setPendingInvoiceNav(null);
       }}>
@@ -504,7 +613,7 @@ export default function HomeScreen() {
               <TouchableOpacity key={inv.id} onPress={()=>{setPendingInvoiceNav({type:'view',inv});setShowInvoiceList(false);}} style={{backgroundColor:t.card,borderColor:t.border,borderWidth:1,borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
                 <View>
                   <Text style={{color:t.text,fontWeight:'500'}}>{inv.contact?.name || 'Client'}</Text>
-                  <Text style={{color:t.sub,fontSize:12,marginTop:2}}>{inv.invoiceNumber}</Text>
+                  <Text style={{color:t.sub,fontSize:12,marginTop:2}}>{inv.invoiceNumber}{ruleForRecord('invoice',inv.id)?<Text style={{color:t.accent}}>  🔁 {freqLabel(ruleForRecord('invoice',inv.id).freq)}</Text>:null}</Text>
                 </View>
                 <View style={{alignItems:'flex-end'}}>
                   <Text style={{color: inv.status==='paid' ? t.accent : t.gold,fontWeight:'600'}}>{fmt(inv.total)}</Text>
@@ -546,7 +655,7 @@ export default function HomeScreen() {
 
       {/* Bills List Modal */}
       <Modal visible={showBillList} animationType="slide" presentationStyle="pageSheet" onDismiss={()=>{
-        if(pendingBillNav?.type==='add'){ setEditingBill(false); setBillForm({vendor:'',amount:'',description:'',category:'',billDate:new Date().toISOString().slice(0,10),dueDate:''}); setShowBill(true); }
+        if(pendingBillNav?.type==='add'){ setEditingBill(false); setBillForm({vendor:'',amount:'',description:'',category:'',billDate:new Date().toISOString().slice(0,10),dueDate:'',recurring:''}); setShowBill(true); }
         else if(pendingBillNav?.type==='view'){ setSelectedBill(pendingBillNav.item); setShowBillDetail(true); }
         setPendingBillNav(null);
       }}>
@@ -562,7 +671,7 @@ export default function HomeScreen() {
             {bills.length===0 ? <Text style={{color:t.sub,fontSize:14,textAlign:'center',marginTop:20}}>No bills yet</Text> : bills.map(bill => (
               <TouchableOpacity key={bill.id} onPress={()=>{setPendingBillNav({type:'view',item:bill});setShowBillList(false);}} style={{backgroundColor:t.card,borderColor:t.border,borderWidth:1,borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
                 <View>
-                  <Text style={{color:t.text,fontWeight:'500'}}>{bill.vendor}</Text>
+                  <Text style={{color:t.text,fontWeight:'500'}}>{bill.vendor}{ruleForRecord('bill',bill.id)?<Text style={{color:t.accent,fontSize:12}}>  🔁 {freqLabel(ruleForRecord('bill',bill.id).freq)}</Text>:null}</Text>
                   <Text style={{color:t.sub,fontSize:12,marginTop:2,textTransform:'capitalize'}}>{bill.status}</Text>
                 </View>
                 <Text style={{color: bill.status==='paid' ? t.accent : t.gold,fontWeight:'600'}}>{fmt(bill.amount)}</Text>
@@ -620,8 +729,9 @@ export default function HomeScreen() {
                     {selectedInvoice.lines.map((l, i) => (
                       <View key={i} style={{flexDirection:'row',justifyContent:'space-between',marginBottom:8}}>
                         <View style={{flex:1}}>
-                          <Text style={{color:t.text,fontSize:14}}>{l.description}</Text>
+                          <Text style={{color:t.text,fontSize:14}}>{l.description}{Number(selectedInvoice.taxRate||0)>0?(l.taxable===false?<Text style={{color:t.sub,fontSize:11}}>  · Non-taxable</Text>:<Text style={{color:t.accent,fontSize:11}}>  · Taxable</Text>):null}</Text>
                           <Text style={{color:t.sub,fontSize:12}}>{l.quantity} x {fmt(l.unitPrice)}</Text>
+                          {l.service ? <Text style={{color:t.accent,fontSize:11,marginTop:2}}>{l.service}</Text> : null}
                         </View>
                         <Text style={{color:t.accent,fontSize:14,fontWeight:'600'}}>{fmt(l.amount)}</Text>
                       </View>
@@ -629,9 +739,13 @@ export default function HomeScreen() {
                   </View>
                 )}
                 <View style={{backgroundColor:t.card,borderRadius:12,padding:20,marginBottom:16}}>
+                  <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:8}}>
+                    <Text style={{color:t.sub,fontSize:14}}>Subtotal</Text>
+                    <Text style={{color:t.text,fontSize:14}}>{fmt((selectedInvoice.lines||[]).reduce((s,l)=>s+Number(l.amount||0),0))}</Text>
+                  </View>
                   {Number(selectedInvoice.taxAmount||0) > 0 && (
                     <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:8}}>
-                      <Text style={{color:t.sub,fontSize:14}}>Tax</Text>
+                      <Text style={{color:t.sub,fontSize:14}}>Tax{Number(selectedInvoice.taxRate||0)>0?` (${Number(selectedInvoice.taxRate)}%)`:''}</Text>
                       <Text style={{color:t.text,fontSize:14}}>{fmt(selectedInvoice.taxAmount)}</Text>
                     </View>
                   )}
@@ -641,7 +755,13 @@ export default function HomeScreen() {
                       <Text style={{color:t.text,fontSize:14}}>{fmt(selectedInvoice.shipping)}</Text>
                     </View>
                   )}
-                  <View style={{flexDirection:'row',justifyContent:'space-between'}}>
+                  {Number(selectedInvoice.discount||0) > 0 && (
+                    <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:8}}>
+                      <Text style={{color:t.sub,fontSize:14}}>Discount</Text>
+                      <Text style={{color:t.danger,fontSize:14}}>-{fmt(selectedInvoice.discount)}</Text>
+                    </View>
+                  )}
+                  <View style={{flexDirection:'row',justifyContent:'space-between',paddingTop:8,borderTopWidth:1,borderTopColor:t.chip}}>
                     <Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>Total</Text>
                     <Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>{fmt(selectedInvoice.total)}</Text>
                   </View>
@@ -803,7 +923,7 @@ export default function HomeScreen() {
               <Text style={{color:invoiceForm.dueDate?t.text:t.sub,fontSize:15}}>{invoiceForm.dueDate ? new Date(invoiceForm.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select due date'}</Text>
             </TouchableOpacity><Modal visible={invoiceDatePickerVisible} transparent animationType='fade'>
               <View style={{flex:1,backgroundColor:'rgba(0,0,0,0.6)',justifyContent:'center',alignItems:'center',padding:24}}>
-                <View style={{backgroundColor:'#1E3A28',borderRadius:16,padding:20,width:'100%',maxWidth:340}}>
+                <View style={{backgroundColor:t.card,borderRadius:16,padding:20,width:'100%',maxWidth:340}}>
                   {(()=>{
                     const mn=['January','February','March','April','May','June','July','August','September','October','November','December'];
                     const dn=['Su','Mo','Tu','We','Th','Fr','Sa'];
@@ -834,7 +954,7 @@ export default function HomeScreen() {
             </Modal>
             <Modal visible={invoiceDueDatePickerVisible} transparent animationType='fade'>
               <View style={{flex:1,backgroundColor:'rgba(0,0,0,0.6)',justifyContent:'center',alignItems:'center',padding:24}}>
-                <View style={{backgroundColor:'#1E3A28',borderRadius:16,padding:20,width:'100%',maxWidth:340}}>
+                <View style={{backgroundColor:t.card,borderRadius:16,padding:20,width:'100%',maxWidth:340}}>
                   {(()=>{
                     const mn=['January','February','March','April','May','June','July','August','September','October','November','December'];
                     const dn=['Su','Mo','Tu','We','Th','Fr','Sa'];
@@ -875,6 +995,11 @@ export default function HomeScreen() {
                   )}
                 </View>
                 <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:14,marginBottom:8}} value={line.description} onChangeText={v=>updateLine(i,'description',v)} placeholder="Description" placeholderTextColor="#7A9A7A" />
+                <Text style={{color:t.sub,fontSize:10,marginBottom:4}}>SERVICE (OPTIONAL)</Text>
+                <TouchableOpacity onPress={()=>setServicePickerLine(i)} style={{backgroundColor:t.bg,borderRadius:8,padding:12,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+                  <Text style={{color:line.service?t.text:t.sub,fontSize:14}}>{line.service||'Select service…'}</Text>
+                  <Text style={{color:t.sub,fontSize:12}}>▼</Text>
+                </TouchableOpacity>
                 <View style={{flexDirection:'row',gap:8}}>
                   <View style={{flex:1}}>
                     <Text style={{color:t.sub,fontSize:10,marginBottom:4}}>QTY</Text>
@@ -888,11 +1013,40 @@ export default function HomeScreen() {
                     <Text style={{color:t.accent,fontSize:14,fontWeight:'600',textAlign:'right',padding:12}}>{fmt(Number(line.quantity||0)*Number(line.unitPrice||0))}</Text>
                   </View>
                 </View>
+                <TouchableOpacity onPress={()=>updateLine(i,'taxable',line.taxable===false)} style={{flexDirection:'row',alignItems:'center',marginTop:10,gap:8}}>
+                  <View style={{width:22,height:22,borderRadius:6,borderWidth:2,borderColor:line.taxable===false?t.sub:t.accent,backgroundColor:line.taxable===false?'transparent':t.accent,alignItems:'center',justifyContent:'center'}}>
+                    {line.taxable!==false ? <Text style={{color:t.bg,fontSize:14,fontWeight:'800'}}>✓</Text> : null}
+                  </View>
+                  <Text style={{color:t.text,fontSize:14}}>Taxable</Text>
+                  <Text style={{color:t.sub,fontSize:12}}>{line.taxable===false?'— no tax on this item':''}</Text>
+                </TouchableOpacity>
               </View>
             ))}
             <TouchableOpacity onPress={addLine} style={{backgroundColor:t.card,borderRadius:10,padding:14,alignItems:'center',marginBottom:24,borderWidth:1,borderColor:t.chip,borderStyle:'dashed'}}>
               <Text style={{color:t.accent,fontSize:14}}>+ Add Line Item</Text>
             </TouchableOpacity>
+
+            <Modal visible={servicePickerLine!==null} transparent animationType='slide'>
+              <TouchableOpacity style={{flex:1,backgroundColor:'rgba(0,0,0,0.5)'}} onPress={()=>setServicePickerLine(null)} />
+              <View style={{backgroundColor:t.card,borderTopLeftRadius:20,borderTopRightRadius:20,padding:20,maxHeight:'60%'}}>
+                <Text style={{color:t.accent,fontSize:16,fontWeight:'700',marginBottom:16,textAlign:'center'}}>Select Service</Text>
+                <ScrollView keyboardShouldPersistTaps="handled">
+                  <TouchableOpacity onPress={()=>{const li=servicePickerLine; Alert.prompt('New Service','Enter a service name',(text)=>{const s=(text||'').trim(); if(s){updateLine(li,'service',s);} setServicePickerLine(null);});}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:t.chip,marginBottom:2}}>
+                    <Text style={{color:t.gold,fontSize:15,fontWeight:'600'}}>+ Add new service…</Text>
+                  </TouchableOpacity>
+                  {servicePickerLine!==null && lines[servicePickerLine]?.service ? (
+                    <TouchableOpacity onPress={()=>{updateLine(servicePickerLine,'service','');setServicePickerLine(null);}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:t.chip,marginBottom:2}}>
+                      <Text style={{color:t.sub,fontSize:15}}>✕ Clear service</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                  {[...new Set(invoices.flatMap(inv=>(inv.lines||[])).map(l=>l.service).filter(Boolean))].sort((a,b)=>a.localeCompare(b)).map(sv=>(
+                    <TouchableOpacity key={sv} onPress={()=>{updateLine(servicePickerLine,'service',sv);setServicePickerLine(null);}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:t.chip,backgroundColor:(servicePickerLine!==null&&lines[servicePickerLine]?.service===sv)?t.chip:'transparent',borderRadius:8,marginBottom:2}}>
+                      <Text style={{color:(servicePickerLine!==null&&lines[servicePickerLine]?.service===sv)?t.accent:t.text,fontSize:15}}>{sv}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </Modal>
 
             <View style={{backgroundColor:t.card,borderRadius:10,padding:16,marginBottom:16}}>
               <View style={{flexDirection:'row',gap:12,marginBottom:12}}>
@@ -909,14 +1063,67 @@ export default function HomeScreen() {
                   <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:14}} value={invoiceForm.discount} onChangeText={v=>setInvoiceForm(f=>({...f,discount:v}))} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
                 </View>
               </View>
-              <View style={{flexDirection:'row',justifyContent:'space-between',paddingTop:12,borderTopWidth:1,borderTopColor:t.chip}}>
-                <Text style={{color:t.accent,fontSize:16,fontWeight:'700'}}>Total</Text>
-                <Text style={{color:t.accent,fontSize:16,fontWeight:'700'}}>{fmt(invoiceTotal())}</Text>
-              </View>
+              {(() => {
+                const sub = lines.reduce((s,l)=>s+Number(l.quantity||0)*Number(l.unitPrice||0),0);
+                const taxableSub = lines.reduce((s,l)=>s+(l.taxable===false?0:Number(l.quantity||0)*Number(l.unitPrice||0)),0);
+                const rate = Number(invoiceForm.taxRate||0);
+                const tax = taxableSub * (rate/100);
+                const anyNonTax = lines.some(l=>l.taxable===false);
+                return (
+                  <View style={{paddingTop:12,borderTopWidth:1,borderTopColor:t.chip}}>
+                    <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:6}}>
+                      <Text style={{color:t.sub,fontSize:14}}>Subtotal</Text>
+                      <Text style={{color:t.text,fontSize:14}}>{fmt(sub)}</Text>
+                    </View>
+                    {rate>0 && (
+                      <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:6}}>
+                        <Text style={{color:t.sub,fontSize:14}}>Tax ({rate}%{anyNonTax?' on taxable items':''})</Text>
+                        <Text style={{color:t.text,fontSize:14}}>{fmt(tax)}</Text>
+                      </View>
+                    )}
+                    {Number(invoiceForm.shipping||0)>0 && (
+                      <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:6}}>
+                        <Text style={{color:t.sub,fontSize:14}}>Shipping</Text>
+                        <Text style={{color:t.text,fontSize:14}}>{fmt(Number(invoiceForm.shipping))}</Text>
+                      </View>
+                    )}
+                    {Number(invoiceForm.discount||0)>0 && (
+                      <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:6}}>
+                        <Text style={{color:t.sub,fontSize:14}}>Discount</Text>
+                        <Text style={{color:t.danger,fontSize:14}}>-{fmt(Number(invoiceForm.discount))}</Text>
+                      </View>
+                    )}
+                    <View style={{flexDirection:'row',justifyContent:'space-between',paddingTop:8,marginTop:2,borderTopWidth:1,borderTopColor:t.chip}}>
+                      <Text style={{color:t.accent,fontSize:16,fontWeight:'700'}}>Total</Text>
+                      <Text style={{color:t.accent,fontSize:16,fontWeight:'700'}}>{fmt(invoiceTotal())}</Text>
+                    </View>
+                  </View>
+                );
+              })()}
             </View>
 
             <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>NOTES (OPTIONAL)</Text>
             <TextInput style={{backgroundColor:t.card,borderRadius:10,padding:14,color:t.text,fontSize:15,marginBottom:24,borderWidth:1,borderColor:t.chip,minHeight:80}} value={invoiceForm.notes} onChangeText={v=>setInvoiceForm(f=>({...f,notes:v}))} placeholder="Payment terms, special instructions..." placeholderTextColor="#7A9A7A" multiline />
+
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>REPEAT</Text>
+            <TouchableOpacity onPress={()=>setShowInvoiceRepeatPicker(true)} style={{backgroundColor:t.card,borderRadius:10,padding:14,marginBottom:8,borderWidth:1,borderColor:t.chip,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+              <Text style={{color:invoiceForm.recurring?t.text:t.sub,fontSize:15}}>{invoiceForm.recurring?('🔁 '+freqLabel(invoiceForm.recurring)):'One-time (does not repeat)'}</Text>
+              <Text style={{color:t.sub,fontSize:12}}>▼</Text>
+            </TouchableOpacity>
+            {invoiceForm.recurring ? <Text style={{color:t.sub,fontSize:12,marginBottom:24}}>You'll be asked before each new invoice is created.</Text> : <View style={{marginBottom:24}}/>}
+            <Modal visible={showInvoiceRepeatPicker} transparent animationType='slide'>
+              <TouchableOpacity style={{flex:1,backgroundColor:'rgba(0,0,0,0.5)'}} onPress={()=>setShowInvoiceRepeatPicker(false)} />
+              <View style={{backgroundColor:t.card,borderTopLeftRadius:20,borderTopRightRadius:20,padding:20,maxHeight:'60%'}}>
+                <Text style={{color:t.accent,fontSize:16,fontWeight:'700',marginBottom:16,textAlign:'center'}}>Repeat this invoice</Text>
+                <ScrollView>
+                  {FREQUENCIES.map(f=>(
+                    <TouchableOpacity key={f.key||'once'} onPress={()=>{setInvoiceForm(fm=>({...fm,recurring:f.key}));setShowInvoiceRepeatPicker(false);}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:t.chip,backgroundColor:invoiceForm.recurring===f.key?t.chip:'transparent',borderRadius:8,marginBottom:2}}>
+                      <Text style={{color:invoiceForm.recurring===f.key?t.accent:t.text,fontSize:15}}>{f.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </Modal>
 
           </ScrollView>
         </KeyboardAvoidingView>
@@ -972,7 +1179,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <Modal visible={showExpenseCategoryPicker} transparent animationType='slide'>
               <TouchableOpacity style={{flex:1,backgroundColor:'rgba(0,0,0,0.5)'}} onPress={()=>setShowExpenseCategoryPicker(false)} />
-              <View style={{backgroundColor:'#1E3A28',borderTopLeftRadius:20,borderTopRightRadius:20,padding:20,maxHeight:'60%'}}>
+              <View style={{backgroundColor:t.card,borderTopLeftRadius:20,borderTopRightRadius:20,padding:20,maxHeight:'60%'}}>
                 <Text style={{color:t.accent,fontSize:16,fontWeight:'700',marginBottom:16,textAlign:'center'}}>Select Category</Text>
                 <ScrollView>
                   <TouchableOpacity onPress={()=>{Alert.prompt('New Category','Enter a category name',(text)=>{const t=(text||'').trim(); if(t){setExpenseForm(f=>({...f,category:t}));setShowExpenseCategoryPicker(false);}});}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:t.chip,marginBottom:2}}>
@@ -995,7 +1202,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <Modal visible={showDatePicker} transparent animationType='fade'>
               <View style={{flex:1,backgroundColor:'rgba(0,0,0,0.6)',justifyContent:'center',alignItems:'center',padding:24}}>
-                <View style={{backgroundColor:'#1E3A28',borderRadius:16,padding:20,width:'100%',maxWidth:340}}>
+                <View style={{backgroundColor:t.card,borderRadius:16,padding:20,width:'100%',maxWidth:340}}>
                   {(()=>{
                     const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
                     const dayNames=['Su','Mo','Tu','We','Th','Fr','Sa'];
@@ -1043,7 +1250,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <Modal visible={showPaymentMethodPicker} transparent animationType='slide'>
               <TouchableOpacity style={{flex:1,backgroundColor:'rgba(0,0,0,0.5)'}} onPress={()=>setShowPaymentMethodPicker(false)} />
-              <View style={{backgroundColor:'#1E3A28',borderTopLeftRadius:20,borderTopRightRadius:20,padding:20,maxHeight:'60%'}}>
+              <View style={{backgroundColor:t.card,borderTopLeftRadius:20,borderTopRightRadius:20,padding:20,maxHeight:'60%'}}>
                 <Text style={{color:t.accent,fontSize:16,fontWeight:'700',marginBottom:16,textAlign:'center'}}>Select Payment Method</Text>
                 <ScrollView>
                   {['Cash','Check','Credit Card','Debit Card','ACH / Bank Transfer','Wire Transfer','PayPal','Venmo','Zelle','Other'].map(pm=>(
@@ -1087,7 +1294,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <Modal visible={showBillCategoryPicker} transparent animationType='slide'>
               <TouchableOpacity style={{flex:1,backgroundColor:'rgba(0,0,0,0.5)'}} onPress={()=>setShowBillCategoryPicker(false)} />
-              <View style={{backgroundColor:'#1E3A28',borderTopLeftRadius:20,borderTopRightRadius:20,padding:20,maxHeight:'60%'}}>
+              <View style={{backgroundColor:t.card,borderTopLeftRadius:20,borderTopRightRadius:20,padding:20,maxHeight:'60%'}}>
                 <Text style={{color:t.accent,fontSize:16,fontWeight:'700',marginBottom:16,textAlign:'center'}}>Select Category</Text>
                 <ScrollView>
                   <TouchableOpacity onPress={()=>{Alert.prompt('New Category','Enter a category name',(text)=>{const t=(text||'').trim(); if(t){setBillForm(f=>({...f,category:t}));setShowBillCategoryPicker(false);}});}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:t.chip,marginBottom:2}}>
@@ -1110,7 +1317,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <Modal visible={billDatePickerVisible} transparent animationType='fade'>
               <View style={{flex:1,backgroundColor:'rgba(0,0,0,0.6)',justifyContent:'center',alignItems:'center',padding:24}}>
-                <View style={{backgroundColor:'#1E3A28',borderRadius:16,padding:20,width:'100%',maxWidth:340}}>
+                <View style={{backgroundColor:t.card,borderRadius:16,padding:20,width:'100%',maxWidth:340}}>
                   {(()=>{
                     const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
                     const dayNames=['Su','Mo','Tu','We','Th','Fr','Sa'];
@@ -1158,7 +1365,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <Modal visible={billDueDatePickerVisible} transparent animationType='fade'>
               <View style={{flex:1,backgroundColor:'rgba(0,0,0,0.6)',justifyContent:'center',alignItems:'center',padding:24}}>
-                <View style={{backgroundColor:'#1E3A28',borderRadius:16,padding:20,width:'100%',maxWidth:340}}>
+                <View style={{backgroundColor:t.card,borderRadius:16,padding:20,width:'100%',maxWidth:340}}>
                   {(()=>{
                     const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
                     const dayNames=['Su','Mo','Tu','We','Th','Fr','Sa'];
@@ -1201,6 +1408,25 @@ export default function HomeScreen() {
             </Modal>
 <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>DESCRIPTION</Text>
             <TextInput style={{backgroundColor:t.card,borderRadius:10,padding:14,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip}} value={billForm.description} onChangeText={v=>setBillForm(f=>({...f,description:v}))} placeholder="Monthly rent" placeholderTextColor="#7A9A7A" />
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>REPEAT</Text>
+            <TouchableOpacity onPress={()=>setShowBillRepeatPicker(true)} style={{backgroundColor:t.card,borderRadius:10,padding:14,marginBottom:8,borderWidth:1,borderColor:t.chip,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+              <Text style={{color:billForm.recurring?t.text:t.sub,fontSize:15}}>{billForm.recurring?('🔁 '+freqLabel(billForm.recurring)):'One-time (does not repeat)'}</Text>
+              <Text style={{color:t.sub,fontSize:12}}>▼</Text>
+            </TouchableOpacity>
+            {billForm.recurring ? <Text style={{color:t.sub,fontSize:12,marginBottom:8}}>You'll be asked before each new bill is created.</Text> : null}
+            <Modal visible={showBillRepeatPicker} transparent animationType='slide'>
+              <TouchableOpacity style={{flex:1,backgroundColor:'rgba(0,0,0,0.5)'}} onPress={()=>setShowBillRepeatPicker(false)} />
+              <View style={{backgroundColor:t.card,borderTopLeftRadius:20,borderTopRightRadius:20,padding:20,maxHeight:'60%'}}>
+                <Text style={{color:t.accent,fontSize:16,fontWeight:'700',marginBottom:16,textAlign:'center'}}>Repeat this bill</Text>
+                <ScrollView>
+                  {FREQUENCIES.map(f=>(
+                    <TouchableOpacity key={f.key||'once'} onPress={()=>{setBillForm(fm=>({...fm,recurring:f.key}));setShowBillRepeatPicker(false);}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:t.chip,backgroundColor:billForm.recurring===f.key?t.chip:'transparent',borderRadius:8,marginBottom:2}}>
+                      <Text style={{color:billForm.recurring===f.key?t.accent:t.text,fontSize:15}}>{f.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </Modal>
             <TouchableOpacity onPress={()=>{setShowBill(false);setEditingBill(false);}} style={{backgroundColor:t.chip,borderRadius:12,padding:16,alignItems:'center',marginTop:8}}>
               <Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>Cancel</Text>
             </TouchableOpacity>
@@ -1243,6 +1469,10 @@ export default function HomeScreen() {
               const byCat = {};
               costItems.forEach(x=>{ const c=x.category||'Other'; byCat[c]=(byCat[c]||0)+x.amount; });
               const cats = Object.keys(byCat).sort((a,b)=>byCat[b]-byCat[a]);
+              const svcRev = {};
+              fInv.forEach(inv=>(inv.lines||[]).forEach(l=>{ const k=l.service||'Unassigned'; svcRev[k]=(svcRev[k]||0)+Number(l.amount||0); }));
+              const svcKeys = Object.keys(svcRev).sort((a,b)=> a==='Unassigned'?1 : b==='Unassigned'?-1 : svcRev[b]-svcRev[a]);
+              const hasServices = svcKeys.some(k=>k!=='Unassigned');
               const card = {backgroundColor:'#F7FAF7',borderRadius:14,padding:18,marginBottom:16,borderWidth:1,borderColor:'#E4ECE4'};
               const hdr = {color:'#8A9A8A',fontSize:12,fontWeight:'700',letterSpacing:1,marginBottom:10};
               const row = (label,val,color,bold)=>(
@@ -1259,6 +1489,21 @@ export default function HomeScreen() {
                     {row('Paid', paid, '#2D7A4A')}
                     {row('Outstanding', outstanding, '#B7791F')}
                   </View>
+
+                  {hasServices && (
+                    <View>
+                      <Text style={hdr}>REVENUE BY SERVICE</Text>
+                      <View style={card}>
+                        {svcKeys.map((s,idx)=>(
+                          <View key={s} style={{flexDirection:'row',justifyContent:'space-between',marginBottom:idx===svcKeys.length-1?0:10}}>
+                            <Text style={{color: s==='Unassigned'?'#B0BCB0':'#5A6B5A',fontSize:14,fontStyle: s==='Unassigned'?'italic':'normal'}}>{s}</Text>
+                            <Text style={{color:'#2D7A4A',fontSize:14,fontWeight:'500'}}>{fmt(svcRev[s])}</Text>
+                          </View>
+                        ))}
+                      </View>
+                      <Text style={{color:'#B0BCB0',fontSize:11,marginTop:-6,marginBottom:16}}>Based on invoiced line items in this period.</Text>
+                    </View>
+                  )}
 
                   <Text style={hdr}>EXPENSES</Text>
                   <View style={card}>
