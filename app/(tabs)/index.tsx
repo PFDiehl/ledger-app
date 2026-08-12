@@ -20,9 +20,9 @@ const BILL_CATEGORIES = ['Rent & Lease','Utilities','Insurance','Loan Payment','
 
 // App color themes. O = Original forest green (default), B = Evergreen (light), C = Slate (premium dark).
 const THEMES = {
-  O: { key:'O', name:'Original',  bg:'#1C2E1C', card:'#2D4A35', border:'rgba(255,255,255,0.06)', text:'#FFFFFF', sub:'#7A9A7A', accent:'#A8D4A8', gold:'#FFD166', chip:'#3D5A45' },
-  B: { key:'B', name:'Evergreen', bg:'#F4F1E9', card:'#FFFFFF', border:'rgba(0,0,0,0.08)',       text:'#18271C', sub:'#6B7A6B', accent:'#2D7A4A', gold:'#B9852B', chip:'#EAE6DA' },
-  C: { key:'C', name:'Slate',     bg:'#16181D', card:'#21252C', border:'rgba(255,255,255,0.07)', text:'#FFFFFF', sub:'#9AA3AE', accent:'#5FCF9A', gold:'#E8B94A', chip:'#2A2F38' },
+  O: { key:'O', name:'Original',  bg:'#1c2e1c', card:'#2d4a35', border:'rgba(255,255,255,0.06)', text:'#FFFFFF', sub:'#7a9a7a', accent:'#a8d4a8', gold:'#FFD166', chip:'#3d5a45', danger:'#d4a8a8', input:'#1c2e1c' },
+  B: { key:'B', name:'Evergreen', bg:'#F4F1E9', card:'#FFFFFF', border:'rgba(0,0,0,0.08)',       text:'#18271C', sub:'#6B7A6B', accent:'#2D7A4A', gold:'#B9852B', chip:'#EAE6DA', danger:'#B4472D', input:'#F0EEE6' },
+  C: { key:'C', name:'Slate',     bg:'#16181D', card:'#21252C', border:'rgba(255,255,255,0.07)', text:'#FFFFFF', sub:'#9AA3AE', accent:'#5FCF9A', gold:'#E8B94A', chip:'#2A2F38', danger:'#E5928A', input:'#16181D' },
 };
 
 export default function HomeScreen() {
@@ -46,6 +46,7 @@ export default function HomeScreen() {
   const [pendingExpenseNav, setPendingExpenseNav] = useState(null);
   const [pendingBillNav, setPendingBillNav] = useState(null);
   const [themeKey, setThemeKey] = useState('O');
+  const t = THEMES[themeKey] || THEMES.O;
   const [showRegister, setShowRegister] = useState(false);
   const [showReports, setShowReports] = useState(false);
   const [reportPeriod, setReportPeriod] = useState('ytd');
@@ -371,57 +372,57 @@ export default function HomeScreen() {
 
   if (!user) {
     return (
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#2D4A35'}}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:t.card}}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{flexGrow:1,alignItems:'center',justifyContent:'center',padding:24}}>
-          <Text style={{fontSize:32,fontWeight:'700',color:'#A8D4A8',marginBottom:2}}>Mountain Top</Text>
-          <Text style={{fontSize:32,fontWeight:'700',color:'#A8D4A8',marginBottom:8}}>Ledger</Text>
-          <Text style={{fontSize:14,color:'#7A9A7A',marginBottom:40}}>Built for where you are going</Text>
-          <TextInput style={{width:'100%',backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:12}} placeholder="Email" placeholderTextColor="#7A9A7A" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+          <Text style={{fontSize:32,fontWeight:'700',color:t.accent,marginBottom:2}}>Mountain Top</Text>
+          <Text style={{fontSize:32,fontWeight:'700',color:t.accent,marginBottom:8}}>Ledger</Text>
+          <Text style={{fontSize:14,color:t.sub,marginBottom:40}}>Built for where you are going</Text>
+          <TextInput style={{width:'100%',backgroundColor:t.chip,borderRadius:12,padding:16,color:t.text,fontSize:16,marginBottom:12}} placeholder="Email" placeholderTextColor="#7A9A7A" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
           <View style={{width:'100%',marginBottom:20}}>
-            <TextInput style={{width:'100%',backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,paddingRight:60}} placeholder="Password" placeholderTextColor="#7A9A7A" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} />
+            <TextInput style={{width:'100%',backgroundColor:t.chip,borderRadius:12,padding:16,color:t.text,fontSize:16,paddingRight:60}} placeholder="Password" placeholderTextColor="#7A9A7A" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} />
             <TouchableOpacity onPress={()=>setShowPassword(p=>!p)} style={{position:'absolute',right:16,top:16}}>
-              <Text style={{color:'#7A9A7A',fontSize:14}}>{showPassword ? 'Hide' : 'Show'}</Text>
+              <Text style={{color:t.sub,fontSize:14}}>{showPassword ? 'Hide' : 'Show'}</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={{width:'100%',backgroundColor:'#A8D4A8',borderRadius:12,padding:16,alignItems:'center'}} onPress={login}>
-            <Text style={{fontSize:16,fontWeight:'600',color:'#2D4A35'}}>Sign in</Text>
+          <TouchableOpacity style={{width:'100%',backgroundColor:t.accent,borderRadius:12,padding:16,alignItems:'center'}} onPress={login}>
+            <Text style={{fontSize:16,fontWeight:'600',color:t.card}}>Sign in</Text>
           </TouchableOpacity>
           <TouchableOpacity style={{marginTop:16}} onPress={()=>setShowRegister(true)}>
-            <Text style={{color:'#7A9A7A',fontSize:14,textAlign:'center'}}>Don't have an account? <Text style={{color:'#A8D4A8'}}>Register</Text></Text>
+            <Text style={{color:t.sub,fontSize:14,textAlign:'center'}}>Don't have an account? <Text style={{color:t.accent}}>Register</Text></Text>
           </TouchableOpacity>
         </ScrollView>
         <Modal visible={showRegister} animationType="slide" presentationStyle="pageSheet">
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#2D4A35'}}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:t.card}}>
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:24,paddingTop:60}}>
               <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
                 <TouchableOpacity onPress={()=>setShowRegister(false)}>
-                  <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
+                  <Text style={{color:t.sub,fontSize:16}}>Cancel</Text>
                 </TouchableOpacity>
-                <Text style={{color:'#fff',fontSize:17,fontWeight:'600'}}>Register</Text>
+                <Text style={{color:t.text,fontSize:17,fontWeight:'600'}}>Register</Text>
                 <TouchableOpacity onPress={register}>
-                  <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Save</Text>
+                  <Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>Save</Text>
                 </TouchableOpacity>
               </View>
-              <Text style={{fontSize:28,fontWeight:'700',color:'#A8D4A8',marginBottom:4}}>Create account</Text>
-              <Text style={{fontSize:14,color:'#7A9A7A',marginBottom:32}}>Start your free trial today</Text>
-              <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>FULL NAME</Text>
-              <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:16,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.fullName} onChangeText={v=>setRegForm(f=>({...f,fullName:v}))} placeholder="Jane Smith" placeholderTextColor="#7A9A7A" />
-              <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>COMPANY NAME</Text>
-              <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:16,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.orgName} onChangeText={v=>setRegForm(f=>({...f,orgName:v}))} placeholder="Acme Co." placeholderTextColor="#7A9A7A" />
-              <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>EMAIL</Text>
-              <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,marginBottom:16,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.email} onChangeText={v=>setRegForm(f=>({...f,email:v}))} placeholder="you@company.com" placeholderTextColor="#7A9A7A" keyboardType="email-address" autoCapitalize="none" />
-              <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>PASSWORD</Text>
+              <Text style={{fontSize:28,fontWeight:'700',color:t.accent,marginBottom:4}}>Create account</Text>
+              <Text style={{fontSize:14,color:t.sub,marginBottom:32}}>Start your free trial today</Text>
+              <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>FULL NAME</Text>
+              <TextInput style={{backgroundColor:t.chip,borderRadius:12,padding:16,color:t.text,fontSize:16,marginBottom:16,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.fullName} onChangeText={v=>setRegForm(f=>({...f,fullName:v}))} placeholder="Jane Smith" placeholderTextColor="#7A9A7A" />
+              <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>COMPANY NAME</Text>
+              <TextInput style={{backgroundColor:t.chip,borderRadius:12,padding:16,color:t.text,fontSize:16,marginBottom:16,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.orgName} onChangeText={v=>setRegForm(f=>({...f,orgName:v}))} placeholder="Acme Co." placeholderTextColor="#7A9A7A" />
+              <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>EMAIL</Text>
+              <TextInput style={{backgroundColor:t.chip,borderRadius:12,padding:16,color:t.text,fontSize:16,marginBottom:16,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.email} onChangeText={v=>setRegForm(f=>({...f,email:v}))} placeholder="you@company.com" placeholderTextColor="#7A9A7A" keyboardType="email-address" autoCapitalize="none" />
+              <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>PASSWORD</Text>
               <View style={{width:'100%',marginBottom:16}}>
-                <TextInput style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,color:'#fff',fontSize:16,paddingRight:60,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.password} onChangeText={v=>setRegForm(f=>({...f,password:v}))} placeholder="Min 8 characters" placeholderTextColor="#7A9A7A" secureTextEntry={!showRegPassword} />
+                <TextInput style={{backgroundColor:t.chip,borderRadius:12,padding:16,color:t.text,fontSize:16,paddingRight:60,borderWidth:1,borderColor:'#4D6A55'}} value={regForm.password} onChangeText={v=>setRegForm(f=>({...f,password:v}))} placeholder="Min 8 characters" placeholderTextColor="#7A9A7A" secureTextEntry={!showRegPassword} />
                 <TouchableOpacity onPress={()=>setShowRegPassword(p=>!p)} style={{position:'absolute',right:16,top:16}}>
-                  <Text style={{color:'#7A9A7A',fontSize:14}}>{showRegPassword ? 'Hide' : 'Show'}</Text>
+                  <Text style={{color:t.sub,fontSize:14}}>{showRegPassword ? 'Hide' : 'Show'}</Text>
                 </TouchableOpacity>
               </View>
               <View style={{height:16}} />
-              <TouchableOpacity style={{backgroundColor:'#A8D4A8',borderRadius:12,padding:16,alignItems:'center'}} onPress={register}>
-                <Text style={{fontSize:16,fontWeight:'600',color:'#2D4A35'}}>Create Account</Text>
+              <TouchableOpacity style={{backgroundColor:t.accent,borderRadius:12,padding:16,alignItems:'center'}} onPress={register}>
+                <Text style={{fontSize:16,fontWeight:'600',color:t.card}}>Create Account</Text>
               </TouchableOpacity>
-              <Text style={{fontSize:20,fontWeight:'700',color:'#3D5A45',textAlign:'center',marginTop:40,marginBottom:40}}>Mountain Top Ledger</Text>
+              <Text style={{fontSize:20,fontWeight:'700',color:t.chip,textAlign:'center',marginTop:40,marginBottom:40}}>Mountain Top Ledger</Text>
             </ScrollView>
           </KeyboardAvoidingView>
         </Modal>
@@ -431,7 +432,6 @@ export default function HomeScreen() {
 
   const totalInvoiced = invoices.reduce((s,i)=>s+Number(i.total),0);
   const totalExpenses = expenses.reduce((s,e)=>s+Number(e.amount),0);
-  const t = THEMES[themeKey] || THEMES.O;
 
   return (
     <ScrollView style={{flex:1,backgroundColor:t.bg}}>
@@ -489,24 +489,24 @@ export default function HomeScreen() {
         else if(pendingInvoiceNav?.type==='view'){ setSelectedInvoice(pendingInvoiceNav.inv); setShowDetail(true); }
         setPendingInvoiceNav(null);
       }}>
-        <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
+        <ScrollView style={{flex:1,backgroundColor:t.bg}}>
           <View style={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
-              <Text style={{color:'#fff',fontSize:24,fontWeight:'700'}}>Invoices</Text>
-              <TouchableOpacity onPress={()=>setShowInvoiceList(false)}><Text style={{color:'#7A9A7A',fontSize:16}}>Close</Text></TouchableOpacity>
+              <Text style={{color:t.text,fontSize:24,fontWeight:'700'}}>Invoices</Text>
+              <TouchableOpacity onPress={()=>setShowInvoiceList(false)}><Text style={{color:t.sub,fontSize:16}}>Close</Text></TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={()=>{setPendingInvoiceNav({type:'add'});setShowInvoiceList(false);}} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,alignItems:'center',marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}}>
-              <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>+ Add Invoice</Text>
+            <TouchableOpacity onPress={()=>{setPendingInvoiceNav({type:'add'});setShowInvoiceList(false);}} style={{backgroundColor:t.card,borderRadius:12,padding:16,alignItems:'center',marginBottom:16,borderWidth:1,borderColor:t.border}}>
+              <Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>+ Add Invoice</Text>
             </TouchableOpacity>
-            {invoices.length===0 ? <Text style={{color:'#7A9A7A',fontSize:14,textAlign:'center',marginTop:20}}>No invoices yet</Text> : invoices.map(inv => (
-              <TouchableOpacity key={inv.id} onPress={()=>{setPendingInvoiceNav({type:'view',inv});setShowInvoiceList(false);}} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+            {invoices.length===0 ? <Text style={{color:t.sub,fontSize:14,textAlign:'center',marginTop:20}}>No invoices yet</Text> : invoices.map(inv => (
+              <TouchableOpacity key={inv.id} onPress={()=>{setPendingInvoiceNav({type:'view',inv});setShowInvoiceList(false);}} style={{backgroundColor:t.card,borderColor:t.border,borderWidth:1,borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
                 <View>
-                  <Text style={{color:'#fff',fontWeight:'500'}}>{inv.contact?.name || 'Client'}</Text>
-                  <Text style={{color:'#7A9A7A',fontSize:12,marginTop:2}}>{inv.invoiceNumber}</Text>
+                  <Text style={{color:t.text,fontWeight:'500'}}>{inv.contact?.name || 'Client'}</Text>
+                  <Text style={{color:t.sub,fontSize:12,marginTop:2}}>{inv.invoiceNumber}</Text>
                 </View>
                 <View style={{alignItems:'flex-end'}}>
-                  <Text style={{color: inv.status==='paid' ? '#A8D4A8' : '#ffd166',fontWeight:'600'}}>{fmt(inv.total)}</Text>
-                  <Text style={{color:'#7A9A7A',fontSize:11,marginTop:2,textTransform:'capitalize'}}>{inv.status}</Text>
+                  <Text style={{color: inv.status==='paid' ? t.accent : t.gold,fontWeight:'600'}}>{fmt(inv.total)}</Text>
+                  <Text style={{color:t.sub,fontSize:11,marginTop:2,textTransform:'capitalize'}}>{inv.status}</Text>
                 </View>
               </TouchableOpacity>
             ))}
@@ -520,22 +520,22 @@ export default function HomeScreen() {
         else if(pendingExpenseNav?.type==='view'){ setSelectedExpense(pendingExpenseNav.item); setShowExpenseDetail(true); }
         setPendingExpenseNav(null);
       }}>
-        <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
+        <ScrollView style={{flex:1,backgroundColor:t.bg}}>
           <View style={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
-              <Text style={{color:'#fff',fontSize:24,fontWeight:'700'}}>Expenses</Text>
-              <TouchableOpacity onPress={()=>setShowExpenseList(false)}><Text style={{color:'#7A9A7A',fontSize:16}}>Close</Text></TouchableOpacity>
+              <Text style={{color:t.text,fontSize:24,fontWeight:'700'}}>Expenses</Text>
+              <TouchableOpacity onPress={()=>setShowExpenseList(false)}><Text style={{color:t.sub,fontSize:16}}>Close</Text></TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={()=>{setPendingExpenseNav({type:'add'});setShowExpenseList(false);}} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginBottom:16}}>
-              <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>+ Add Expense</Text>
+            <TouchableOpacity onPress={()=>{setPendingExpenseNav({type:'add'});setShowExpenseList(false);}} style={{backgroundColor:t.card,borderRadius:12,padding:16,alignItems:'center',marginBottom:16,borderWidth:1,borderColor:t.border}}>
+              <Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>+ Add Expense</Text>
             </TouchableOpacity>
-            {expenses.length===0 ? <Text style={{color:'#7A9A7A',fontSize:14,textAlign:'center',marginTop:20}}>No expenses yet</Text> : expenses.map(exp => (
-              <TouchableOpacity key={exp.id} onPress={()=>{setPendingExpenseNav({type:'view',item:exp});setShowExpenseList(false);}} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+            {expenses.length===0 ? <Text style={{color:t.sub,fontSize:14,textAlign:'center',marginTop:20}}>No expenses yet</Text> : expenses.map(exp => (
+              <TouchableOpacity key={exp.id} onPress={()=>{setPendingExpenseNav({type:'view',item:exp});setShowExpenseList(false);}} style={{backgroundColor:t.card,borderColor:t.border,borderWidth:1,borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
                 <View>
-                  <Text style={{color:'#fff',fontWeight:'500'}}>{exp.vendor}</Text>
-                  <Text style={{color:'#7A9A7A',fontSize:12,marginTop:2}}>{exp.category}</Text>
+                  <Text style={{color:t.text,fontWeight:'500'}}>{exp.vendor}</Text>
+                  <Text style={{color:t.sub,fontSize:12,marginTop:2}}>{exp.category}</Text>
                 </View>
-                <Text style={{color:'#A8D4A8',fontWeight:'600'}}>{fmt(exp.amount)}</Text>
+                <Text style={{color:t.accent,fontWeight:'600'}}>{fmt(exp.amount)}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -548,22 +548,22 @@ export default function HomeScreen() {
         else if(pendingBillNav?.type==='view'){ setSelectedBill(pendingBillNav.item); setShowBillDetail(true); }
         setPendingBillNav(null);
       }}>
-        <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
+        <ScrollView style={{flex:1,backgroundColor:t.bg}}>
           <View style={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
-              <Text style={{color:'#fff',fontSize:24,fontWeight:'700'}}>Bills</Text>
-              <TouchableOpacity onPress={()=>setShowBillList(false)}><Text style={{color:'#7A9A7A',fontSize:16}}>Close</Text></TouchableOpacity>
+              <Text style={{color:t.text,fontSize:24,fontWeight:'700'}}>Bills</Text>
+              <TouchableOpacity onPress={()=>setShowBillList(false)}><Text style={{color:t.sub,fontSize:16}}>Close</Text></TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={()=>{setPendingBillNav({type:'add'});setShowBillList(false);}} style={{backgroundColor:'#4A3D2D',borderRadius:12,padding:16,alignItems:'center',marginBottom:16}}>
-              <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>+ Add Bill</Text>
+            <TouchableOpacity onPress={()=>{setPendingBillNav({type:'add'});setShowBillList(false);}} style={{backgroundColor:t.card,borderRadius:12,padding:16,alignItems:'center',marginBottom:16,borderWidth:1,borderColor:t.border}}>
+              <Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>+ Add Bill</Text>
             </TouchableOpacity>
-            {bills.length===0 ? <Text style={{color:'#7A9A7A',fontSize:14,textAlign:'center',marginTop:20}}>No bills yet</Text> : bills.map(bill => (
-              <TouchableOpacity key={bill.id} onPress={()=>{setPendingBillNav({type:'view',item:bill});setShowBillList(false);}} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+            {bills.length===0 ? <Text style={{color:t.sub,fontSize:14,textAlign:'center',marginTop:20}}>No bills yet</Text> : bills.map(bill => (
+              <TouchableOpacity key={bill.id} onPress={()=>{setPendingBillNav({type:'view',item:bill});setShowBillList(false);}} style={{backgroundColor:t.card,borderColor:t.border,borderWidth:1,borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
                 <View>
-                  <Text style={{color:'#fff',fontWeight:'500'}}>{bill.vendor}</Text>
-                  <Text style={{color:'#7A9A7A',fontSize:12,marginTop:2,textTransform:'capitalize'}}>{bill.status}</Text>
+                  <Text style={{color:t.text,fontWeight:'500'}}>{bill.vendor}</Text>
+                  <Text style={{color:t.sub,fontSize:12,marginTop:2,textTransform:'capitalize'}}>{bill.status}</Text>
                 </View>
-                <Text style={{color:'#D4A8A8',fontWeight:'600'}}>{fmt(bill.amount)}</Text>
+                <Text style={{color: bill.status==='paid' ? t.accent : t.gold,fontWeight:'600'}}>{fmt(bill.amount)}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -572,32 +572,32 @@ export default function HomeScreen() {
 
       {/* Invoice Detail Modal */}
       <Modal visible={showDetail} animationType="slide" presentationStyle="pageSheet">
-        <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
+        <ScrollView style={{flex:1,backgroundColor:t.bg}}>
           <View style={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
               <TouchableOpacity onPress={()=>setShowDetail(false)}>
-                <Text style={{color:'#A8D4A8',fontSize:16}}>Close</Text>
+                <Text style={{color:t.accent,fontSize:16}}>Close</Text>
               </TouchableOpacity>
               <View style={{flexDirection:'row',gap:12}}>
-                <TouchableOpacity onPress={()=>editInvoice(selectedInvoice)} style={{backgroundColor:'#2D4A35',borderRadius:8,padding:8,paddingHorizontal:12}}>
-                  <Text style={{color:'#A8D4A8',fontSize:13}}>Edit</Text>
+                <TouchableOpacity onPress={()=>editInvoice(selectedInvoice)} style={{backgroundColor:t.card,borderRadius:8,padding:8,paddingHorizontal:12}}>
+                  <Text style={{color:t.accent,fontSize:13}}>Edit</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={()=>deleteInvoice(selectedInvoice.id)} style={{backgroundColor:'#4a1a1a',borderRadius:8,padding:8,paddingHorizontal:12}}>
-                  <Text style={{color:'#D4A8A8',fontSize:13}}>Delete</Text>
+                  <Text style={{color:'#F0A9A0',fontSize:13}}>Delete</Text>
                 </TouchableOpacity>
               </View>
             </View>
             {selectedInvoice && (
               <View>
-                <Text style={{color:'#fff',fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedInvoice.invoiceNumber}</Text>
-                <Text style={{color:'#7A9A7A',fontSize:14,marginBottom:12,textTransform:'capitalize'}}>{selectedInvoice.status}</Text>
+                <Text style={{color:t.text,fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedInvoice.invoiceNumber}</Text>
+                <Text style={{color:t.sub,fontSize:14,marginBottom:12,textTransform:'capitalize'}}>{selectedInvoice.status}</Text>
                 {selectedInvoice.status !== 'paid' && (
                   <View style={{flexDirection:'row',gap:8,marginBottom:16}}>
                     <TouchableOpacity onPress={()=>markInvoicePaid(selectedInvoice.id)} style={{flex:1,backgroundColor:'#1a4a2a',borderRadius:8,padding:12,alignItems:'center'}}>
                       <Text style={{color:'#A8D4A8',fontSize:13,fontWeight:'600'}}>Mark as Paid</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={()=>recordPartialPayment(selectedInvoice)} style={{flex:1,backgroundColor:'#2D3A1A',borderRadius:8,padding:12,alignItems:'center'}}>
-                      <Text style={{color:'#ffd166',fontSize:13,fontWeight:'600'}}>Partial Payment</Text>
+                      <Text style={{color:'#FFD166',fontSize:13,fontWeight:'600'}}>Partial Payment</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -606,42 +606,42 @@ export default function HomeScreen() {
                     <Text style={{color:'#A8C4D4',fontSize:13,fontWeight:'600'}}>Send Invoice by Email</Text>
                   </TouchableOpacity>
                 )}
-                <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:16}}>
-                  <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>CLIENT</Text>
-                  <Text style={{color:'#fff',fontSize:16,fontWeight:'500'}}>{selectedInvoice.contact?.name || 'N/A'}</Text>
-                  {selectedInvoice.contact?.email ? <Text style={{color:'#7A9A7A',fontSize:13,marginTop:2}}>{selectedInvoice.contact.email}</Text> : null}
-                  {selectedInvoice.salesperson ? <Text style={{color:'#7A9A7A',fontSize:13,marginTop:8}}>Salesperson: <Text style={{color:'#A8D4A8'}}>{selectedInvoice.salesperson}</Text></Text> : null}
+                <View style={{backgroundColor:t.card,borderRadius:12,padding:20,marginBottom:16}}>
+                  <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>CLIENT</Text>
+                  <Text style={{color:t.text,fontSize:16,fontWeight:'500'}}>{selectedInvoice.contact?.name || 'N/A'}</Text>
+                  {selectedInvoice.contact?.email ? <Text style={{color:t.sub,fontSize:13,marginTop:2}}>{selectedInvoice.contact.email}</Text> : null}
+                  {selectedInvoice.salesperson ? <Text style={{color:t.sub,fontSize:13,marginTop:8}}>Salesperson: <Text style={{color:t.accent}}>{selectedInvoice.salesperson}</Text></Text> : null}
                 </View>
                 {selectedInvoice.lines?.length > 0 && (
-                  <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:16}}>
-                    <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:12}}>LINE ITEMS</Text>
+                  <View style={{backgroundColor:t.card,borderRadius:12,padding:20,marginBottom:16}}>
+                    <Text style={{color:t.sub,fontSize:11,marginBottom:12}}>LINE ITEMS</Text>
                     {selectedInvoice.lines.map((l, i) => (
                       <View key={i} style={{flexDirection:'row',justifyContent:'space-between',marginBottom:8}}>
                         <View style={{flex:1}}>
-                          <Text style={{color:'#fff',fontSize:14}}>{l.description}</Text>
-                          <Text style={{color:'#7A9A7A',fontSize:12}}>{l.quantity} x {fmt(l.unitPrice)}</Text>
+                          <Text style={{color:t.text,fontSize:14}}>{l.description}</Text>
+                          <Text style={{color:t.sub,fontSize:12}}>{l.quantity} x {fmt(l.unitPrice)}</Text>
                         </View>
-                        <Text style={{color:'#A8D4A8',fontSize:14,fontWeight:'600'}}>{fmt(l.amount)}</Text>
+                        <Text style={{color:t.accent,fontSize:14,fontWeight:'600'}}>{fmt(l.amount)}</Text>
                       </View>
                     ))}
                   </View>
                 )}
-                <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:16}}>
+                <View style={{backgroundColor:t.card,borderRadius:12,padding:20,marginBottom:16}}>
                   {Number(selectedInvoice.taxAmount||0) > 0 && (
                     <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:8}}>
-                      <Text style={{color:'#7A9A7A',fontSize:14}}>Tax</Text>
-                      <Text style={{color:'#fff',fontSize:14}}>{fmt(selectedInvoice.taxAmount)}</Text>
+                      <Text style={{color:t.sub,fontSize:14}}>Tax</Text>
+                      <Text style={{color:t.text,fontSize:14}}>{fmt(selectedInvoice.taxAmount)}</Text>
                     </View>
                   )}
                   {Number(selectedInvoice.shipping||0) > 0 && (
                     <View style={{flexDirection:'row',justifyContent:'space-between',marginBottom:8}}>
-                      <Text style={{color:'#7A9A7A',fontSize:14}}>Shipping</Text>
-                      <Text style={{color:'#fff',fontSize:14}}>{fmt(selectedInvoice.shipping)}</Text>
+                      <Text style={{color:t.sub,fontSize:14}}>Shipping</Text>
+                      <Text style={{color:t.text,fontSize:14}}>{fmt(selectedInvoice.shipping)}</Text>
                     </View>
                   )}
                   <View style={{flexDirection:'row',justifyContent:'space-between'}}>
-                    <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Total</Text>
-                    <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>{fmt(selectedInvoice.total)}</Text>
+                    <Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>Total</Text>
+                    <Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>{fmt(selectedInvoice.total)}</Text>
                   </View>
                 </View>
               </View>
@@ -652,61 +652,61 @@ export default function HomeScreen() {
 
       {/* Expense Detail Modal */}
       <Modal visible={showExpenseDetail} animationType="slide" presentationStyle="pageSheet">
-        <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
+        <ScrollView style={{flex:1,backgroundColor:t.bg}}>
           <View style={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
               <TouchableOpacity onPress={()=>setShowExpenseDetail(false)}>
-                <Text style={{color:'#A8D4A8',fontSize:16}}>Close</Text>
+                <Text style={{color:t.accent,fontSize:16}}>Close</Text>
               </TouchableOpacity>
               <View style={{flexDirection:'row',gap:12}}>
-                <TouchableOpacity onPress={()=>editExpense(selectedExpense)} style={{backgroundColor:'#2D4A35',borderRadius:8,padding:8,paddingHorizontal:12}}>
-                  <Text style={{color:'#A8D4A8',fontSize:13}}>Edit</Text>
+                <TouchableOpacity onPress={()=>editExpense(selectedExpense)} style={{backgroundColor:t.card,borderRadius:8,padding:8,paddingHorizontal:12}}>
+                  <Text style={{color:t.accent,fontSize:13}}>Edit</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={()=>deleteExpense(selectedExpense.id)} style={{backgroundColor:'#4a1a1a',borderRadius:8,padding:8,paddingHorizontal:12}}>
-                  <Text style={{color:'#D4A8A8',fontSize:13}}>Delete</Text>
+                  <Text style={{color:'#F0A9A0',fontSize:13}}>Delete</Text>
                 </TouchableOpacity>
               </View>
             </View>
             {selectedExpense && (
               <View>
-                <Text style={{color:'#fff',fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedExpense.vendor}</Text>
-                <Text style={{color:'#7A9A7A',fontSize:14,marginBottom:8,textTransform:'capitalize'}}>{selectedExpense.category}</Text>
-                <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:12,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-                  <Text style={{color:'#7A9A7A',fontSize:13}}>Amount</Text>
-                  <Text style={{color:'#A8D4A8',fontSize:20,fontWeight:'700'}}>{fmt(selectedExpense.amount)}</Text>
+                <Text style={{color:t.text,fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedExpense.vendor}</Text>
+                <Text style={{color:t.sub,fontSize:14,marginBottom:8,textTransform:'capitalize'}}>{selectedExpense.category}</Text>
+                <View style={{backgroundColor:t.card,borderRadius:12,padding:20,marginBottom:12,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+                  <Text style={{color:t.sub,fontSize:13}}>Amount</Text>
+                  <Text style={{color:t.accent,fontSize:20,fontWeight:'700'}}>{fmt(selectedExpense.amount)}</Text>
                 </View>
                 {selectedExpense.date ? (
-                  <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between'}}>
-                    <Text style={{color:'#7A9A7A',fontSize:13}}>Date</Text>
-                    <Text style={{color:'#fff',fontSize:13}}>{new Date(selectedExpense.date).toLocaleDateString()}</Text>
+                  <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between'}}>
+                    <Text style={{color:t.sub,fontSize:13}}>Date</Text>
+                    <Text style={{color:t.text,fontSize:13}}>{new Date(selectedExpense.date).toLocaleDateString()}</Text>
                   </View>
                 ) : null}
                 {selectedExpense.paymentMethod ? (
-                  <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between'}}>
-                    <Text style={{color:'#7A9A7A',fontSize:13}}>Payment Method</Text>
-                    <Text style={{color:'#fff',fontSize:13}}>{selectedExpense.paymentMethod}</Text>
+                  <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between'}}>
+                    <Text style={{color:t.sub,fontSize:13}}>Payment Method</Text>
+                    <Text style={{color:t.text,fontSize:13}}>{selectedExpense.paymentMethod}</Text>
                   </View>
                 ) : null}
                 {selectedExpense.receiptNumber ? (
-                  <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between'}}>
-                    <Text style={{color:'#7A9A7A',fontSize:13}}>Receipt #</Text>
-                    <Text style={{color:'#fff',fontSize:13}}>{selectedExpense.receiptNumber}</Text>
+                  <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between'}}>
+                    <Text style={{color:t.sub,fontSize:13}}>Receipt #</Text>
+                    <Text style={{color:t.text,fontSize:13}}>{selectedExpense.receiptNumber}</Text>
                   </View>
                 ) : null}
                 {selectedExpense.description ? (
-                  <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:12}}>
-                    <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>DESCRIPTION</Text>
-                    <Text style={{color:'#fff',fontSize:14}}>{selectedExpense.description}</Text>
+                  <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12}}>
+                    <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>DESCRIPTION</Text>
+                    <Text style={{color:t.text,fontSize:14}}>{selectedExpense.description}</Text>
                   </View>
                 ) : null}
                 {selectedExpense.receiptUrl ? (
-                  <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:12}}>
-                    <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:10}}>RECEIPT IMAGE</Text>
+                  <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12}}>
+                    <Text style={{color:t.sub,fontSize:11,marginBottom:10}}>RECEIPT IMAGE</Text>
                     <Image source={{uri:selectedExpense.receiptUrl}} style={{width:'100%',height:300,borderRadius:8}} resizeMode="contain" />
                   </View>
                 ) : (
-                  <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:12,alignItems:'center'}}>
-                    <Text style={{color:'#7A9A7A',fontSize:13}}>No receipt image attached</Text>
+                  <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12,alignItems:'center'}}>
+                    <Text style={{color:t.sub,fontSize:13}}>No receipt image attached</Text>
                   </View>
                 )}
               </View>
@@ -717,47 +717,47 @@ export default function HomeScreen() {
 
       {/* Bill Detail Modal */}
       <Modal visible={showBillDetail} animationType="slide" presentationStyle="pageSheet">
-        <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
+        <ScrollView style={{flex:1,backgroundColor:t.bg}}>
           <View style={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
               <TouchableOpacity onPress={()=>setShowBillDetail(false)}>
-                <Text style={{color:'#A8D4A8',fontSize:16}}>Close</Text>
+                <Text style={{color:t.accent,fontSize:16}}>Close</Text>
               </TouchableOpacity>
               <View style={{flexDirection:'row',gap:12}}>
-                <TouchableOpacity onPress={()=>editBill(selectedBill)} style={{backgroundColor:'#2D4A35',borderRadius:8,padding:8,paddingHorizontal:12}}>
-                  <Text style={{color:'#A8D4A8',fontSize:13}}>Edit</Text>
+                <TouchableOpacity onPress={()=>editBill(selectedBill)} style={{backgroundColor:t.card,borderRadius:8,padding:8,paddingHorizontal:12}}>
+                  <Text style={{color:t.accent,fontSize:13}}>Edit</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={()=>deleteBill(selectedBill.id)} style={{backgroundColor:'#4a1a1a',borderRadius:8,padding:8,paddingHorizontal:12}}>
-                  <Text style={{color:'#D4A8A8',fontSize:13}}>Delete</Text>
+                  <Text style={{color:'#F0A9A0',fontSize:13}}>Delete</Text>
                 </TouchableOpacity>
               </View>
             </View>
             {selectedBill && (
               <View>
-                <Text style={{color:'#fff',fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedBill.vendor}</Text>
-                <Text style={{color:'#7A9A7A',fontSize:14,marginBottom:16,textTransform:'capitalize'}}>{selectedBill.category||'Bill'}</Text>
-                <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:20,marginBottom:12,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-                  <Text style={{color:'#7A9A7A',fontSize:13}}>Amount Due</Text>
-                  <Text style={{color:'#D4A8A8',fontSize:20,fontWeight:'700'}}>{fmt(selectedBill.amount)}</Text>
+                <Text style={{color:t.text,fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedBill.vendor}</Text>
+                <Text style={{color:t.sub,fontSize:14,marginBottom:16,textTransform:'capitalize'}}>{selectedBill.category||'Bill'}</Text>
+                <View style={{backgroundColor:t.card,borderRadius:12,padding:20,marginBottom:12,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+                  <Text style={{color:t.sub,fontSize:13}}>Amount Due</Text>
+                  <Text style={{color:t.danger,fontSize:20,fontWeight:'700'}}>{fmt(selectedBill.amount)}</Text>
                 </View>
-                <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-                  <Text style={{color:'#7A9A7A',fontSize:13}}>Status</Text>
-                  <Text style={{color:selectedBill.status==='paid'?'#A8D4A8':'#ffd166',fontSize:13,fontWeight:'600',textTransform:'capitalize'}}>{selectedBill.status}</Text>
+                <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+                  <Text style={{color:t.sub,fontSize:13}}>Status</Text>
+                  <Text style={{color:selectedBill.status==='paid'?t.accent:t.gold,fontSize:13,fontWeight:'600',textTransform:'capitalize'}}>{selectedBill.status}</Text>
                 </View>
                 {selectedBill.status==='paid'
-                  ? <TouchableOpacity onPress={()=>setBillStatus(selectedBill.id,'pending')} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:14,alignItems:'center',marginBottom:12}}><Text style={{color:'#A8D4A8',fontSize:15,fontWeight:'600'}}>Mark as Unpaid</Text></TouchableOpacity>
+                  ? <TouchableOpacity onPress={()=>setBillStatus(selectedBill.id,'pending')} style={{backgroundColor:t.chip,borderRadius:12,padding:14,alignItems:'center',marginBottom:12}}><Text style={{color:t.accent,fontSize:15,fontWeight:'600'}}>Mark as Unpaid</Text></TouchableOpacity>
                   : <TouchableOpacity onPress={()=>setBillStatus(selectedBill.id,'paid')} style={{backgroundColor:'#1a4a2a',borderRadius:12,padding:14,alignItems:'center',marginBottom:12}}><Text style={{color:'#A8D4A8',fontSize:15,fontWeight:'600'}}>Mark as Paid</Text></TouchableOpacity>
                 }
                 {selectedBill.dueDate ? (
-                  <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between'}}>
-                    <Text style={{color:'#7A9A7A',fontSize:13}}>Due Date</Text>
-                    <Text style={{color:'#fff',fontSize:13}}>{new Date(selectedBill.dueDate).toLocaleDateString()}</Text>
+                  <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between'}}>
+                    <Text style={{color:t.sub,fontSize:13}}>Due Date</Text>
+                    <Text style={{color:t.text,fontSize:13}}>{new Date(selectedBill.dueDate).toLocaleDateString()}</Text>
                   </View>
                 ) : null}
                 {selectedBill.description ? (
-                  <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:12}}>
-                    <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>DESCRIPTION</Text>
-                    <Text style={{color:'#fff',fontSize:14}}>{selectedBill.description}</Text>
+                  <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12}}>
+                    <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>DESCRIPTION</Text>
+                    <Text style={{color:t.text,fontSize:14}}>{selectedBill.description}</Text>
                   </View>
                 ) : null}
               </View>
@@ -768,37 +768,37 @@ export default function HomeScreen() {
 
       {/* New Invoice Modal */}
       <Modal visible={showInvoice} animationType="slide" presentationStyle="pageSheet">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:t.bg}}>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
               <TouchableOpacity onPress={()=>{setShowInvoice(false);setEditingInvoice(false);}}>
-                <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
+                <Text style={{color:t.sub,fontSize:16}}>Cancel</Text>
               </TouchableOpacity>
-              <Text style={{color:'#fff',fontSize:17,fontWeight:'600'}}>{editingInvoice ? 'Edit Invoice' : 'New Invoice'}</Text>
+              <Text style={{color:t.text,fontSize:17,fontWeight:'600'}}>{editingInvoice ? 'Edit Invoice' : 'New Invoice'}</Text>
               <TouchableOpacity onPress={saveInvoice}>
-                <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Save</Text>
+                <Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>Save</Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>CLIENT NAME</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={invoiceForm.clientName} onChangeText={v=>setInvoiceForm(f=>({...f,clientName:v}))} placeholder="Acme Corp" placeholderTextColor="#7A9A7A" />
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>CLIENT NAME</Text>
+            <TextInput style={{backgroundColor:t.card,borderRadius:10,padding:14,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip}} value={invoiceForm.clientName} onChangeText={v=>setInvoiceForm(f=>({...f,clientName:v}))} placeholder="Acme Corp" placeholderTextColor="#7A9A7A" />
 
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>CLIENT EMAIL</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={invoiceForm.clientEmail} onChangeText={v=>setInvoiceForm(f=>({...f,clientEmail:v}))} placeholder="client@example.com" placeholderTextColor="#7A9A7A" keyboardType="email-address" autoCapitalize="none" />
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>CLIENT EMAIL</Text>
+            <TextInput style={{backgroundColor:t.card,borderRadius:10,padding:14,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip}} value={invoiceForm.clientEmail} onChangeText={v=>setInvoiceForm(f=>({...f,clientEmail:v}))} placeholder="client@example.com" placeholderTextColor="#7A9A7A" keyboardType="email-address" autoCapitalize="none" />
 
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>PO / WORK ORDER NUMBER (OPTIONAL)</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={invoiceForm.poNumber} onChangeText={v=>setInvoiceForm(f=>({...f,poNumber:v}))} placeholder="PO-12345" placeholderTextColor="#7A9A7A" />
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>PO / WORK ORDER NUMBER (OPTIONAL)</Text>
+            <TextInput style={{backgroundColor:t.card,borderRadius:10,padding:14,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip}} value={invoiceForm.poNumber} onChangeText={v=>setInvoiceForm(f=>({...f,poNumber:v}))} placeholder="PO-12345" placeholderTextColor="#7A9A7A" />
 
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>SALESPERSON (OPTIONAL)</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:24,borderWidth:1,borderColor:'#3D5A45'}} value={invoiceForm.salesperson || ''} onChangeText={v=>setInvoiceForm(f=>({...f,salesperson:v}))} placeholder="Jane Smith" placeholderTextColor="#7A9A7A" />
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>SALESPERSON (OPTIONAL)</Text>
+            <TextInput style={{backgroundColor:t.card,borderRadius:10,padding:14,color:t.text,fontSize:15,marginBottom:24,borderWidth:1,borderColor:t.chip}} value={invoiceForm.salesperson || ''} onChangeText={v=>setInvoiceForm(f=>({...f,salesperson:v}))} placeholder="Jane Smith" placeholderTextColor="#7A9A7A" />
 
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>INVOICE DATE</Text>
-            <TouchableOpacity onPress={()=>{setInvCalYear(new Date().getFullYear());setInvCalMonth(new Date().getMonth());setInvoiceDatePickerVisible(true);}} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-              <Text style={{color:invoiceForm.issueDate?'#fff':'#7A9A7A',fontSize:15}}>{invoiceForm.issueDate ? new Date(invoiceForm.issueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select date'}</Text>
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>INVOICE DATE</Text>
+            <TouchableOpacity onPress={()=>{setInvCalYear(new Date().getFullYear());setInvCalMonth(new Date().getMonth());setInvoiceDatePickerVisible(true);}} style={{backgroundColor:t.card,borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:t.chip,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+              <Text style={{color:invoiceForm.issueDate?t.text:t.sub,fontSize:15}}>{invoiceForm.issueDate ? new Date(invoiceForm.issueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select date'}</Text>
             </TouchableOpacity>
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DUE DATE (OPTIONAL)</Text>
-            <TouchableOpacity onPress={()=>{setInvDueCalYear(new Date().getFullYear());setInvDueCalMonth(new Date().getMonth());setInvoiceDueDatePickerVisible(true);}} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:24,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-              <Text style={{color:invoiceForm.dueDate?'#fff':'#7A9A7A',fontSize:15}}>{invoiceForm.dueDate ? new Date(invoiceForm.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select due date'}</Text>
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>DUE DATE (OPTIONAL)</Text>
+            <TouchableOpacity onPress={()=>{setInvDueCalYear(new Date().getFullYear());setInvDueCalMonth(new Date().getMonth());setInvoiceDueDatePickerVisible(true);}} style={{backgroundColor:t.card,borderRadius:10,padding:14,marginBottom:24,borderWidth:1,borderColor:t.chip,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+              <Text style={{color:invoiceForm.dueDate?t.text:t.sub,fontSize:15}}>{invoiceForm.dueDate ? new Date(invoiceForm.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select due date'}</Text>
             </TouchableOpacity><Modal visible={invoiceDatePickerVisible} transparent animationType='fade'>
               <View style={{flex:1,backgroundColor:'rgba(0,0,0,0.6)',justifyContent:'center',alignItems:'center',padding:24}}>
                 <View style={{backgroundColor:'#1E3A28',borderRadius:16,padding:20,width:'100%',maxWidth:340}}>
@@ -812,19 +812,19 @@ export default function HomeScreen() {
                     const isToday=(d)=>{const t=new Date();return d&&t.getFullYear()===invCalYear&&t.getMonth()===invCalMonth&&t.getDate()===d;};
                     return(<View>
                       <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
-                        <TouchableOpacity onPress={()=>{if(invCalMonth===0){setInvCalMonth(11);setInvCalYear(y=>y-1);}else setInvCalMonth(m=>m-1);}} style={{padding:8}}><Text style={{color:'#A8D4A8',fontSize:20}}>{'<'}</Text></TouchableOpacity>
-                        <Text style={{color:'#fff',fontSize:16,fontWeight:'600'}}>{mn[invCalMonth]} {invCalYear}</Text>
-                        <TouchableOpacity onPress={()=>{if(invCalMonth===11){setInvCalMonth(0);setInvCalYear(y=>y+1);}else setInvCalMonth(m=>m+1);}} style={{padding:8}}><Text style={{color:'#A8D4A8',fontSize:20}}>{'>'}</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={()=>{if(invCalMonth===0){setInvCalMonth(11);setInvCalYear(y=>y-1);}else setInvCalMonth(m=>m-1);}} style={{padding:8}}><Text style={{color:t.accent,fontSize:20}}>{'<'}</Text></TouchableOpacity>
+                        <Text style={{color:t.text,fontSize:16,fontWeight:'600'}}>{mn[invCalMonth]} {invCalYear}</Text>
+                        <TouchableOpacity onPress={()=>{if(invCalMonth===11){setInvCalMonth(0);setInvCalYear(y=>y+1);}else setInvCalMonth(m=>m+1);}} style={{padding:8}}><Text style={{color:t.accent,fontSize:20}}>{'>'}</Text></TouchableOpacity>
                       </View>
-                      <View style={{flexDirection:'row',marginBottom:8}}>{dn.map(d=><View key={d} style={{flex:1,alignItems:'center'}}><Text style={{color:'#7A9A7A',fontSize:11,fontWeight:'600'}}>{d}</Text></View>)}</View>
+                      <View style={{flexDirection:'row',marginBottom:8}}>{dn.map(d=><View key={d} style={{flex:1,alignItems:'center'}}><Text style={{color:t.sub,fontSize:11,fontWeight:'600'}}>{d}</Text></View>)}</View>
                       <View style={{flexDirection:'row',flexWrap:'wrap'}}>
                         {cells.map((d,i)=>(
                           <TouchableOpacity key={i} onPress={()=>{if(d){const ds=`${invCalYear}-${String(invCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;setInvoiceForm(f=>({...f,issueDate:ds}));setInvoiceDatePickerVisible(false);}}} style={{width:'14.28%',aspectRatio:1,alignItems:'center',justifyContent:'center',marginBottom:2}}>
-                            {d?<View style={{width:32,height:32,borderRadius:16,backgroundColor:isSel(d)?'#A8D4A8':'transparent',alignItems:'center',justifyContent:'center',borderWidth:isToday(d)&&!isSel(d)?1:0,borderColor:'#A8D4A8'}}><Text style={{color:isSel(d)?'#1C2E1C':'#fff',fontSize:14,fontWeight:isSel(d)||isToday(d)?'700':'400'}}>{d}</Text></View>:null}
+                            {d?<View style={{width:32,height:32,borderRadius:16,backgroundColor:isSel(d)?t.accent:'transparent',alignItems:'center',justifyContent:'center',borderWidth:isToday(d)&&!isSel(d)?1:0,borderColor:t.accent}}><Text style={{color:isSel(d)?t.bg:t.text,fontSize:14,fontWeight:isSel(d)||isToday(d)?'700':'400'}}>{d}</Text></View>:null}
                           </TouchableOpacity>
                         ))}
                       </View>
-                      <TouchableOpacity onPress={()=>setInvoiceDatePickerVisible(false)} style={{marginTop:16,padding:12,alignItems:'center',borderTopWidth:1,borderTopColor:'#3D5A45'}}><Text style={{color:'#7A9A7A',fontSize:15}}>Cancel</Text></TouchableOpacity>
+                      <TouchableOpacity onPress={()=>setInvoiceDatePickerVisible(false)} style={{marginTop:16,padding:12,alignItems:'center',borderTopWidth:1,borderTopColor:t.chip}}><Text style={{color:t.sub,fontSize:15}}>Cancel</Text></TouchableOpacity>
                     </View>);
                   })()}
                 </View>
@@ -843,78 +843,78 @@ export default function HomeScreen() {
                     const isToday=(d)=>{const t=new Date();return d&&t.getFullYear()===invDueCalYear&&t.getMonth()===invDueCalMonth&&t.getDate()===d;};
                     return(<View>
                       <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
-                        <TouchableOpacity onPress={()=>{if(invDueCalMonth===0){setInvDueCalMonth(11);setInvDueCalYear(y=>y-1);}else setInvDueCalMonth(m=>m-1);}} style={{padding:8}}><Text style={{color:'#A8D4A8',fontSize:20}}>{'<'}</Text></TouchableOpacity>
-                        <Text style={{color:'#fff',fontSize:16,fontWeight:'600'}}>{mn[invDueCalMonth]} {invDueCalYear}</Text>
-                        <TouchableOpacity onPress={()=>{if(invDueCalMonth===11){setInvDueCalMonth(0);setInvDueCalYear(y=>y+1);}else setInvDueCalMonth(m=>m+1);}} style={{padding:8}}><Text style={{color:'#A8D4A8',fontSize:20}}>{'>'}</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={()=>{if(invDueCalMonth===0){setInvDueCalMonth(11);setInvDueCalYear(y=>y-1);}else setInvDueCalMonth(m=>m-1);}} style={{padding:8}}><Text style={{color:t.accent,fontSize:20}}>{'<'}</Text></TouchableOpacity>
+                        <Text style={{color:t.text,fontSize:16,fontWeight:'600'}}>{mn[invDueCalMonth]} {invDueCalYear}</Text>
+                        <TouchableOpacity onPress={()=>{if(invDueCalMonth===11){setInvDueCalMonth(0);setInvDueCalYear(y=>y+1);}else setInvDueCalMonth(m=>m+1);}} style={{padding:8}}><Text style={{color:t.accent,fontSize:20}}>{'>'}</Text></TouchableOpacity>
                       </View>
-                      <View style={{flexDirection:'row',marginBottom:8}}>{dn.map(d=><View key={d} style={{flex:1,alignItems:'center'}}><Text style={{color:'#7A9A7A',fontSize:11,fontWeight:'600'}}>{d}</Text></View>)}</View>
+                      <View style={{flexDirection:'row',marginBottom:8}}>{dn.map(d=><View key={d} style={{flex:1,alignItems:'center'}}><Text style={{color:t.sub,fontSize:11,fontWeight:'600'}}>{d}</Text></View>)}</View>
                       <View style={{flexDirection:'row',flexWrap:'wrap'}}>
                         {cells.map((d,i)=>(
                           <TouchableOpacity key={i} onPress={()=>{if(d){const ds=`${invDueCalYear}-${String(invDueCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;setInvoiceForm(f=>({...f,dueDate:ds}));setInvoiceDueDatePickerVisible(false);}}} style={{width:'14.28%',aspectRatio:1,alignItems:'center',justifyContent:'center',marginBottom:2}}>
-                            {d?<View style={{width:32,height:32,borderRadius:16,backgroundColor:isSel(d)?'#A8D4A8':'transparent',alignItems:'center',justifyContent:'center',borderWidth:isToday(d)&&!isSel(d)?1:0,borderColor:'#A8D4A8'}}><Text style={{color:isSel(d)?'#1C2E1C':'#fff',fontSize:14,fontWeight:isSel(d)||isToday(d)?'700':'400'}}>{d}</Text></View>:null}
+                            {d?<View style={{width:32,height:32,borderRadius:16,backgroundColor:isSel(d)?t.accent:'transparent',alignItems:'center',justifyContent:'center',borderWidth:isToday(d)&&!isSel(d)?1:0,borderColor:t.accent}}><Text style={{color:isSel(d)?t.bg:t.text,fontSize:14,fontWeight:isSel(d)||isToday(d)?'700':'400'}}>{d}</Text></View>:null}
                           </TouchableOpacity>
                         ))}
                       </View>
-                      <TouchableOpacity onPress={()=>setInvoiceDueDatePickerVisible(false)} style={{marginTop:16,padding:12,alignItems:'center',borderTopWidth:1,borderTopColor:'#3D5A45'}}><Text style={{color:'#7A9A7A',fontSize:15}}>Cancel</Text></TouchableOpacity>
+                      <TouchableOpacity onPress={()=>setInvoiceDueDatePickerVisible(false)} style={{marginTop:16,padding:12,alignItems:'center',borderTopWidth:1,borderTopColor:t.chip}}><Text style={{color:t.sub,fontSize:15}}>Cancel</Text></TouchableOpacity>
                     </View>);
                   })()}
                 </View>
               </View>
             </Modal>
-<Text style={{color:'#7A9A7A',fontSize:13,fontWeight:'600',marginBottom:12}}>LINE ITEMS</Text>
+<Text style={{color:t.sub,fontSize:13,fontWeight:'600',marginBottom:12}}>LINE ITEMS</Text>
             {lines.map((line, i) => (
-              <View key={i} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:12,borderWidth:1,borderColor:'#3D5A45'}}>
+              <View key={i} style={{backgroundColor:t.card,borderRadius:10,padding:14,marginBottom:12,borderWidth:1,borderColor:t.chip}}>
                 <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-                  <Text style={{color:'#7A9A7A',fontSize:11}}>ITEM {i+1}</Text>
+                  <Text style={{color:t.sub,fontSize:11}}>ITEM {i+1}</Text>
                   {lines.length > 1 && (
                     <TouchableOpacity onPress={()=>removeLine(i)}>
-                      <Text style={{color:'#D4A8A8',fontSize:13}}>Remove</Text>
+                      <Text style={{color:t.danger,fontSize:13}}>Remove</Text>
                     </TouchableOpacity>
                   )}
                 </View>
-                <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:14,marginBottom:8}} value={line.description} onChangeText={v=>updateLine(i,'description',v)} placeholder="Description" placeholderTextColor="#7A9A7A" />
+                <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:14,marginBottom:8}} value={line.description} onChangeText={v=>updateLine(i,'description',v)} placeholder="Description" placeholderTextColor="#7A9A7A" />
                 <View style={{flexDirection:'row',gap:8}}>
                   <View style={{flex:1}}>
-                    <Text style={{color:'#7A9A7A',fontSize:10,marginBottom:4}}>QTY</Text>
-                    <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:14}} value={line.quantity} onChangeText={v=>updateLine(i,'quantity',v)} keyboardType="decimal-pad" />
+                    <Text style={{color:t.sub,fontSize:10,marginBottom:4}}>QTY</Text>
+                    <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:14}} value={line.quantity} onChangeText={v=>updateLine(i,'quantity',v)} keyboardType="decimal-pad" />
                   </View>
                   <View style={{flex:2}}>
-                    <Text style={{color:'#7A9A7A',fontSize:10,marginBottom:4}}>UNIT PRICE ($)</Text>
-                    <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:14}} value={line.unitPrice} onChangeText={v=>updateLine(i,'unitPrice',v)} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
+                    <Text style={{color:t.sub,fontSize:10,marginBottom:4}}>UNIT PRICE ($)</Text>
+                    <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:14}} value={line.unitPrice} onChangeText={v=>updateLine(i,'unitPrice',v)} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
                   </View>
                   <View style={{flex:1.5,justifyContent:'flex-end'}}>
-                    <Text style={{color:'#A8D4A8',fontSize:14,fontWeight:'600',textAlign:'right',padding:12}}>{fmt(Number(line.quantity||0)*Number(line.unitPrice||0))}</Text>
+                    <Text style={{color:t.accent,fontSize:14,fontWeight:'600',textAlign:'right',padding:12}}>{fmt(Number(line.quantity||0)*Number(line.unitPrice||0))}</Text>
                   </View>
                 </View>
               </View>
             ))}
-            <TouchableOpacity onPress={addLine} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,alignItems:'center',marginBottom:24,borderWidth:1,borderColor:'#3D5A45',borderStyle:'dashed'}}>
-              <Text style={{color:'#A8D4A8',fontSize:14}}>+ Add Line Item</Text>
+            <TouchableOpacity onPress={addLine} style={{backgroundColor:t.card,borderRadius:10,padding:14,alignItems:'center',marginBottom:24,borderWidth:1,borderColor:t.chip,borderStyle:'dashed'}}>
+              <Text style={{color:t.accent,fontSize:14}}>+ Add Line Item</Text>
             </TouchableOpacity>
 
-            <View style={{backgroundColor:'#2D4A35',borderRadius:10,padding:16,marginBottom:16}}>
+            <View style={{backgroundColor:t.card,borderRadius:10,padding:16,marginBottom:16}}>
               <View style={{flexDirection:'row',gap:12,marginBottom:12}}>
                 <View style={{flex:1}}>
-                  <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>TAX RATE (%)</Text>
-                  <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:14}} value={invoiceForm.taxRate} onChangeText={v=>setInvoiceForm(f=>({...f,taxRate:v}))} placeholder="0" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
+                  <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>TAX RATE (%)</Text>
+                  <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:14}} value={invoiceForm.taxRate} onChangeText={v=>setInvoiceForm(f=>({...f,taxRate:v}))} placeholder="0" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
                 </View>
                 <View style={{flex:1}}>
-                  <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>SHIPPING ($)</Text>
-                  <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:14}} value={invoiceForm.shipping} onChangeText={v=>setInvoiceForm(f=>({...f,shipping:v}))} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
+                  <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>SHIPPING ($)</Text>
+                  <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:14}} value={invoiceForm.shipping} onChangeText={v=>setInvoiceForm(f=>({...f,shipping:v}))} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
                 </View>
                 <View style={{flex:1}}>
-                  <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DISCOUNT ($)</Text>
-                  <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:14}} value={invoiceForm.discount} onChangeText={v=>setInvoiceForm(f=>({...f,discount:v}))} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
+                  <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>DISCOUNT ($)</Text>
+                  <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:14}} value={invoiceForm.discount} onChangeText={v=>setInvoiceForm(f=>({...f,discount:v}))} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
                 </View>
               </View>
-              <View style={{flexDirection:'row',justifyContent:'space-between',paddingTop:12,borderTopWidth:1,borderTopColor:'#3D5A45'}}>
-                <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'700'}}>Total</Text>
-                <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'700'}}>{fmt(invoiceTotal())}</Text>
+              <View style={{flexDirection:'row',justifyContent:'space-between',paddingTop:12,borderTopWidth:1,borderTopColor:t.chip}}>
+                <Text style={{color:t.accent,fontSize:16,fontWeight:'700'}}>Total</Text>
+                <Text style={{color:t.accent,fontSize:16,fontWeight:'700'}}>{fmt(invoiceTotal())}</Text>
               </View>
             </View>
 
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>NOTES (OPTIONAL)</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:24,borderWidth:1,borderColor:'#3D5A45',minHeight:80}} value={invoiceForm.notes} onChangeText={v=>setInvoiceForm(f=>({...f,notes:v}))} placeholder="Payment terms, special instructions..." placeholderTextColor="#7A9A7A" multiline />
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>NOTES (OPTIONAL)</Text>
+            <TextInput style={{backgroundColor:t.card,borderRadius:10,padding:14,color:t.text,fontSize:15,marginBottom:24,borderWidth:1,borderColor:t.chip,minHeight:80}} value={invoiceForm.notes} onChangeText={v=>setInvoiceForm(f=>({...f,notes:v}))} placeholder="Payment terms, special instructions..." placeholderTextColor="#7A9A7A" multiline />
 
           </ScrollView>
         </KeyboardAvoidingView>
@@ -922,15 +922,15 @@ export default function HomeScreen() {
 
       {/* Expense Modal */}
       <Modal visible={showExpense} animationType="slide" presentationStyle="pageSheet">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:t.bg}}>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
               <TouchableOpacity onPress={()=>{setShowExpense(false);setEditingExpense(false);}}>
-                <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
+                <Text style={{color:t.sub,fontSize:16}}>Cancel</Text>
               </TouchableOpacity>
-              <Text style={{color:'#fff',fontSize:17,fontWeight:'600'}}>{editingExpense ? 'Edit Expense' : 'New Expense'}</Text>
+              <Text style={{color:t.text,fontSize:17,fontWeight:'600'}}>{editingExpense ? 'Edit Expense' : 'New Expense'}</Text>
               <TouchableOpacity onPress={saveExpense} disabled={scanningReceipt}>
-                <Text style={{color:scanningReceipt?'#5A7A5A':'#A8D4A8',fontSize:16,fontWeight:'600'}}>{scanningReceipt?'Scanning…':'Save'}</Text>
+                <Text style={{color:scanningReceipt?'#5A7A5A':t.accent,fontSize:16,fontWeight:'600'}}>{scanningReceipt?'Scanning…':'Save'}</Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity onPress={async()=>{
@@ -959,37 +959,37 @@ export default function HomeScreen() {
               }catch(e){Alert.alert('Error','Could not read receipt. Fill in manually.');}
               finally{setScanningReceipt(false);}
             }} style={{backgroundColor:'#1C3A4A',borderRadius:12,padding:14,alignItems:'center',marginBottom:20,flexDirection:'row',justifyContent:'center',gap:8}}>
-              <Text style={{color:scanningReceipt?'#7A9A7A':'#A8C4D4',fontSize:15,fontWeight:'600'}}>{scanningReceipt?'Scanning receipt...':'Scan Receipt'}</Text>
+              <Text style={{color:scanningReceipt?t.sub:'#A8C4D4',fontSize:15,fontWeight:'600'}}>{scanningReceipt?'Scanning receipt...':'Scan Receipt'}</Text>
             </TouchableOpacity>
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>VENDOR</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={expenseForm.vendor} onChangeText={v=>setExpenseForm(f=>({...f,vendor:v}))} placeholder="Amazon" placeholderTextColor="#7A9A7A" />
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>CATEGORY</Text>
-            <TouchableOpacity onPress={()=>setShowExpenseCategoryPicker(true)} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-              <Text style={{color:expenseForm.category?'#fff':'#7A9A7A',fontSize:15}}>{expenseForm.category||'Select category...'}</Text>
-              <Text style={{color:'#7A9A7A',fontSize:12}}>▼</Text>
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>VENDOR</Text>
+            <TextInput style={{backgroundColor:t.card,borderRadius:10,padding:14,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip}} value={expenseForm.vendor} onChangeText={v=>setExpenseForm(f=>({...f,vendor:v}))} placeholder="Amazon" placeholderTextColor="#7A9A7A" />
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>CATEGORY</Text>
+            <TouchableOpacity onPress={()=>setShowExpenseCategoryPicker(true)} style={{backgroundColor:t.card,borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:t.chip,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+              <Text style={{color:expenseForm.category?t.text:t.sub,fontSize:15}}>{expenseForm.category||'Select category...'}</Text>
+              <Text style={{color:t.sub,fontSize:12}}>▼</Text>
             </TouchableOpacity>
             <Modal visible={showExpenseCategoryPicker} transparent animationType='slide'>
               <TouchableOpacity style={{flex:1,backgroundColor:'rgba(0,0,0,0.5)'}} onPress={()=>setShowExpenseCategoryPicker(false)} />
               <View style={{backgroundColor:'#1E3A28',borderTopLeftRadius:20,borderTopRightRadius:20,padding:20,maxHeight:'60%'}}>
-                <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'700',marginBottom:16,textAlign:'center'}}>Select Category</Text>
+                <Text style={{color:t.accent,fontSize:16,fontWeight:'700',marginBottom:16,textAlign:'center'}}>Select Category</Text>
                 <ScrollView>
-                  <TouchableOpacity onPress={()=>{Alert.prompt('New Category','Enter a category name',(text)=>{const t=(text||'').trim(); if(t){setExpenseForm(f=>({...f,category:t}));setShowExpenseCategoryPicker(false);}});}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:'#3D5A45',marginBottom:2}}>
+                  <TouchableOpacity onPress={()=>{Alert.prompt('New Category','Enter a category name',(text)=>{const t=(text||'').trim(); if(t){setExpenseForm(f=>({...f,category:t}));setShowExpenseCategoryPicker(false);}});}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:t.chip,marginBottom:2}}>
                     <Text style={{color:'#A8C4D4',fontSize:15,fontWeight:'600'}}>+ Add new category…</Text>
                   </TouchableOpacity>
                   {[...EXPENSE_CATEGORIES, ...[...new Set([...expenses,...bills].map(x=>x.category).filter(Boolean))].filter(c=>!EXPENSE_CATEGORIES.includes(c))].sort((a,b)=>a==='Other'?1:b==='Other'?-1:a.localeCompare(b)).map(cat=>(
-                    <TouchableOpacity key={cat} onPress={()=>{setExpenseForm(f=>({...f,category:cat}));setShowExpenseCategoryPicker(false);}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:'#3D5A45',backgroundColor:expenseForm.category===cat?'#3D5A45':'transparent',borderRadius:8,marginBottom:2}}>
-                      <Text style={{color:expenseForm.category===cat?'#A8D4A8':'#fff',fontSize:15}}>{cat}</Text>
+                    <TouchableOpacity key={cat} onPress={()=>{setExpenseForm(f=>({...f,category:cat}));setShowExpenseCategoryPicker(false);}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:t.chip,backgroundColor:expenseForm.category===cat?t.chip:'transparent',borderRadius:8,marginBottom:2}}>
+                      <Text style={{color:expenseForm.category===cat?t.accent:t.text,fontSize:15}}>{cat}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
               </View>
             </Modal>
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>AMOUNT ($)</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={expenseForm.amount} onChangeText={v=>setExpenseForm(f=>({...f,amount:v}))} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DATE</Text>
-            <TouchableOpacity onPress={()=>setShowDatePicker(true)} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-              <Text style={{color:'#fff',fontSize:15}}>{expenseForm.date ? new Date(expenseForm.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select date'}</Text>
-              <Text style={{color:'#7A9A7A',fontSize:16}}>📅</Text>
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>AMOUNT ($)</Text>
+            <TextInput style={{backgroundColor:t.card,borderRadius:10,padding:14,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip}} value={expenseForm.amount} onChangeText={v=>setExpenseForm(f=>({...f,amount:v}))} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>DATE</Text>
+            <TouchableOpacity onPress={()=>setShowDatePicker(true)} style={{backgroundColor:t.card,borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:t.chip,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+              <Text style={{color:t.text,fontSize:15}}>{expenseForm.date ? new Date(expenseForm.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select date'}</Text>
+              <Text style={{color:t.sub,fontSize:16}}>📅</Text>
             </TouchableOpacity>
             <Modal visible={showDatePicker} transparent animationType='fade'>
               <View style={{flex:1,backgroundColor:'rgba(0,0,0,0.6)',justifyContent:'center',alignItems:'center',padding:24}}>
@@ -1006,27 +1006,27 @@ export default function HomeScreen() {
                       <View>
                         <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
                           <TouchableOpacity onPress={()=>{if(calViewMonth===0){setCalViewMonth(11);setCalViewYear(y=>y-1);}else setCalViewMonth(m=>m-1);}} style={{padding:8}}>
-                            <Text style={{color:'#A8D4A8',fontSize:20}}>‹</Text>
+                            <Text style={{color:t.accent,fontSize:20}}>‹</Text>
                           </TouchableOpacity>
-                          <Text style={{color:'#fff',fontSize:16,fontWeight:'600'}}>{monthNames[calViewMonth]} {calViewYear}</Text>
+                          <Text style={{color:t.text,fontSize:16,fontWeight:'600'}}>{monthNames[calViewMonth]} {calViewYear}</Text>
                           <TouchableOpacity onPress={()=>{if(calViewMonth===11){setCalViewMonth(0);setCalViewYear(y=>y+1);}else setCalViewMonth(m=>m+1);}} style={{padding:8}}>
-                            <Text style={{color:'#A8D4A8',fontSize:20}}>›</Text>
+                            <Text style={{color:t.accent,fontSize:20}}>›</Text>
                           </TouchableOpacity>
                         </View>
                         <View style={{flexDirection:'row',marginBottom:8}}>
-                          {dayNames.map(d=><View key={d} style={{flex:1,alignItems:'center'}}><Text style={{color:'#7A9A7A',fontSize:11,fontWeight:'600'}}>{d}</Text></View>)}
+                          {dayNames.map(d=><View key={d} style={{flex:1,alignItems:'center'}}><Text style={{color:t.sub,fontSize:11,fontWeight:'600'}}>{d}</Text></View>)}
                         </View>
                         <View style={{flexDirection:'row',flexWrap:'wrap'}}>
                           {cells.map((d,i)=>(
                             <TouchableOpacity key={i} onPress={()=>{if(d){const ds=`${calViewYear}-${String(calViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;setExpenseForm(f=>({...f,date:ds}));setShowDatePicker(false);}}} style={{width:'14.28%',aspectRatio:1,alignItems:'center',justifyContent:'center',marginBottom:2}}>
-                              {d?<View style={{width:32,height:32,borderRadius:16,backgroundColor:isSelected(d)?'#A8D4A8':'transparent',alignItems:'center',justifyContent:'center',borderWidth:isToday(d)&&!isSelected(d)?1:0,borderColor:'#A8D4A8'}}>
-                                <Text style={{color:isSelected(d)?'#1C2E1C':'#fff',fontSize:14,fontWeight:isSelected(d)||isToday(d)?'700':'400'}}>{d}</Text>
+                              {d?<View style={{width:32,height:32,borderRadius:16,backgroundColor:isSelected(d)?t.accent:'transparent',alignItems:'center',justifyContent:'center',borderWidth:isToday(d)&&!isSelected(d)?1:0,borderColor:t.accent}}>
+                                <Text style={{color:isSelected(d)?t.bg:t.text,fontSize:14,fontWeight:isSelected(d)||isToday(d)?'700':'400'}}>{d}</Text>
                               </View>:null}
                             </TouchableOpacity>
                           ))}
                         </View>
-                        <TouchableOpacity onPress={()=>setShowDatePicker(false)} style={{marginTop:16,padding:12,alignItems:'center',borderTopWidth:1,borderTopColor:'#3D5A45'}}>
-                          <Text style={{color:'#7A9A7A',fontSize:15}}>Cancel</Text>
+                        <TouchableOpacity onPress={()=>setShowDatePicker(false)} style={{marginTop:16,padding:12,alignItems:'center',borderTopWidth:1,borderTopColor:t.chip}}>
+                          <Text style={{color:t.sub,fontSize:15}}>Cancel</Text>
                         </TouchableOpacity>
                       </View>
                     );
@@ -1034,30 +1034,30 @@ export default function HomeScreen() {
                 </View>
               </View>
             </Modal>
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>PAYMENT METHOD</Text>
-            <TouchableOpacity onPress={()=>setShowPaymentMethodPicker(true)} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-              <Text style={{color:expenseForm.paymentMethod?'#fff':'#7A9A7A',fontSize:15}}>{expenseForm.paymentMethod||'Select payment method...'}</Text>
-              <Text style={{color:'#7A9A7A',fontSize:12}}>▼</Text>
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>PAYMENT METHOD</Text>
+            <TouchableOpacity onPress={()=>setShowPaymentMethodPicker(true)} style={{backgroundColor:t.card,borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:t.chip,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+              <Text style={{color:expenseForm.paymentMethod?t.text:t.sub,fontSize:15}}>{expenseForm.paymentMethod||'Select payment method...'}</Text>
+              <Text style={{color:t.sub,fontSize:12}}>▼</Text>
             </TouchableOpacity>
             <Modal visible={showPaymentMethodPicker} transparent animationType='slide'>
               <TouchableOpacity style={{flex:1,backgroundColor:'rgba(0,0,0,0.5)'}} onPress={()=>setShowPaymentMethodPicker(false)} />
               <View style={{backgroundColor:'#1E3A28',borderTopLeftRadius:20,borderTopRightRadius:20,padding:20,maxHeight:'60%'}}>
-                <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'700',marginBottom:16,textAlign:'center'}}>Select Payment Method</Text>
+                <Text style={{color:t.accent,fontSize:16,fontWeight:'700',marginBottom:16,textAlign:'center'}}>Select Payment Method</Text>
                 <ScrollView>
                   {['Cash','Check','Credit Card','Debit Card','ACH / Bank Transfer','Wire Transfer','PayPal','Venmo','Zelle','Other'].map(pm=>(
-                    <TouchableOpacity key={pm} onPress={()=>{setExpenseForm(f=>({...f,paymentMethod:pm}));setShowPaymentMethodPicker(false);}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:'#3D5A45',backgroundColor:expenseForm.paymentMethod===pm?'#3D5A45':'transparent',borderRadius:8,marginBottom:2}}>
-                      <Text style={{color:expenseForm.paymentMethod===pm?'#A8D4A8':'#fff',fontSize:15}}>{pm}</Text>
+                    <TouchableOpacity key={pm} onPress={()=>{setExpenseForm(f=>({...f,paymentMethod:pm}));setShowPaymentMethodPicker(false);}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:t.chip,backgroundColor:expenseForm.paymentMethod===pm?t.chip:'transparent',borderRadius:8,marginBottom:2}}>
+                      <Text style={{color:expenseForm.paymentMethod===pm?t.accent:t.text,fontSize:15}}>{pm}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
               </View>
             </Modal>
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>RECEIPT NUMBER</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={expenseForm.receiptNumber} onChangeText={v=>setExpenseForm(f=>({...f,receiptNumber:v}))} placeholder="REC-001 (optional)" placeholderTextColor="#7A9A7A" />
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DESCRIPTION</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={expenseForm.description} onChangeText={v=>setExpenseForm(f=>({...f,description:v}))} placeholder="Office supplies" placeholderTextColor="#7A9A7A" />
-            <TouchableOpacity onPress={()=>{setShowExpense(false);setEditingExpense(false);}} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginTop:8}}>
-              <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Cancel</Text>
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>RECEIPT NUMBER</Text>
+            <TextInput style={{backgroundColor:t.card,borderRadius:10,padding:14,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip}} value={expenseForm.receiptNumber} onChangeText={v=>setExpenseForm(f=>({...f,receiptNumber:v}))} placeholder="REC-001 (optional)" placeholderTextColor="#7A9A7A" />
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>DESCRIPTION</Text>
+            <TextInput style={{backgroundColor:t.card,borderRadius:10,padding:14,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip}} value={expenseForm.description} onChangeText={v=>setExpenseForm(f=>({...f,description:v}))} placeholder="Office supplies" placeholderTextColor="#7A9A7A" />
+            <TouchableOpacity onPress={()=>{setShowExpense(false);setEditingExpense(false);}} style={{backgroundColor:t.chip,borderRadius:12,padding:16,alignItems:'center',marginTop:8}}>
+              <Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>Cancel</Text>
             </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -1065,46 +1065,46 @@ export default function HomeScreen() {
 
       {/* Bill Modal */}
       <Modal visible={showBill} animationType="slide" presentationStyle="pageSheet">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:t.bg}}>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
               <TouchableOpacity onPress={()=>{setShowBill(false);setEditingBill(false);}}>
-                <Text style={{color:'#7A9A7A',fontSize:16}}>Cancel</Text>
+                <Text style={{color:t.sub,fontSize:16}}>Cancel</Text>
               </TouchableOpacity>
-              <Text style={{color:'#fff',fontSize:17,fontWeight:'600'}}>{editingBill ? 'Edit Bill' : 'New Bill'}</Text>
+              <Text style={{color:t.text,fontSize:17,fontWeight:'600'}}>{editingBill ? 'Edit Bill' : 'New Bill'}</Text>
               <TouchableOpacity onPress={saveBill}>
-                <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>Save</Text>
+                <Text style={{color:t.danger,fontSize:16,fontWeight:'600'}}>Save</Text>
               </TouchableOpacity>
             </View>
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>VENDOR</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={billForm.vendor} onChangeText={v=>setBillForm(f=>({...f,vendor:v}))} placeholder="Landlord" placeholderTextColor="#7A9A7A" />
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>CATEGORY</Text>
-            <TouchableOpacity onPress={()=>setShowBillCategoryPicker(true)} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-              <Text style={{color:billForm.category?'#fff':'#7A9A7A',fontSize:15}}>{billForm.category||'Select category...'}</Text>
-              <Text style={{color:'#7A9A7A',fontSize:12}}>▼</Text>
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>VENDOR</Text>
+            <TextInput style={{backgroundColor:t.card,borderRadius:10,padding:14,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip}} value={billForm.vendor} onChangeText={v=>setBillForm(f=>({...f,vendor:v}))} placeholder="Landlord" placeholderTextColor="#7A9A7A" />
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>CATEGORY</Text>
+            <TouchableOpacity onPress={()=>setShowBillCategoryPicker(true)} style={{backgroundColor:t.card,borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:t.chip,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+              <Text style={{color:billForm.category?t.text:t.sub,fontSize:15}}>{billForm.category||'Select category...'}</Text>
+              <Text style={{color:t.sub,fontSize:12}}>▼</Text>
             </TouchableOpacity>
             <Modal visible={showBillCategoryPicker} transparent animationType='slide'>
               <TouchableOpacity style={{flex:1,backgroundColor:'rgba(0,0,0,0.5)'}} onPress={()=>setShowBillCategoryPicker(false)} />
               <View style={{backgroundColor:'#1E3A28',borderTopLeftRadius:20,borderTopRightRadius:20,padding:20,maxHeight:'60%'}}>
-                <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'700',marginBottom:16,textAlign:'center'}}>Select Category</Text>
+                <Text style={{color:t.accent,fontSize:16,fontWeight:'700',marginBottom:16,textAlign:'center'}}>Select Category</Text>
                 <ScrollView>
-                  <TouchableOpacity onPress={()=>{Alert.prompt('New Category','Enter a category name',(text)=>{const t=(text||'').trim(); if(t){setBillForm(f=>({...f,category:t}));setShowBillCategoryPicker(false);}});}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:'#3D5A45',marginBottom:2}}>
+                  <TouchableOpacity onPress={()=>{Alert.prompt('New Category','Enter a category name',(text)=>{const t=(text||'').trim(); if(t){setBillForm(f=>({...f,category:t}));setShowBillCategoryPicker(false);}});}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:t.chip,marginBottom:2}}>
                     <Text style={{color:'#A8C4D4',fontSize:15,fontWeight:'600'}}>+ Add new category…</Text>
                   </TouchableOpacity>
                   {[...BILL_CATEGORIES, ...[...new Set([...expenses,...bills].map(x=>x.category).filter(Boolean))].filter(c=>!BILL_CATEGORIES.includes(c))].sort((a,b)=>a==='Other'?1:b==='Other'?-1:a.localeCompare(b)).map(cat=>(
-                    <TouchableOpacity key={cat} onPress={()=>{setBillForm(f=>({...f,category:cat}));setShowBillCategoryPicker(false);}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:'#3D5A45',backgroundColor:billForm.category===cat?'#3D5A45':'transparent',borderRadius:8,marginBottom:2}}>
-                      <Text style={{color:billForm.category===cat?'#A8D4A8':'#fff',fontSize:15}}>{cat}</Text>
+                    <TouchableOpacity key={cat} onPress={()=>{setBillForm(f=>({...f,category:cat}));setShowBillCategoryPicker(false);}} style={{padding:14,borderBottomWidth:0.5,borderBottomColor:t.chip,backgroundColor:billForm.category===cat?t.chip:'transparent',borderRadius:8,marginBottom:2}}>
+                      <Text style={{color:billForm.category===cat?t.accent:t.text,fontSize:15}}>{cat}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
               </View>
             </Modal>
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>AMOUNT ($)</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={billForm.amount?(()=>{const parts=billForm.amount.split('.');const intPart=Number(parts[0].replace(/,/g,'')||0).toLocaleString('en-US');return parts.length>1?intPart+'.'+parts[1]:intPart;})():''} onChangeText={v=>{const raw=v.replace(/,/g,'');if(raw===''||/^\d*\.?\d*$/.test(raw))setBillForm(f=>({...f,amount:raw}));}} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>BILL DATE</Text>
-            <TouchableOpacity onPress={()=>{setBillCalViewYear(new Date().getFullYear());setBillCalViewMonth(new Date().getMonth());setBillDatePickerVisible(true);}} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-              <Text style={{color:billForm.billDate?'#fff':'#7A9A7A',fontSize:15}}>{billForm.billDate ? new Date(billForm.billDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select date'}</Text>
-              <Text style={{color:'#7A9A7A',fontSize:16}}>📅</Text>
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>AMOUNT ($)</Text>
+            <TextInput style={{backgroundColor:t.card,borderRadius:10,padding:14,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip}} value={billForm.amount?(()=>{const parts=billForm.amount.split('.');const intPart=Number(parts[0].replace(/,/g,'')||0).toLocaleString('en-US');return parts.length>1?intPart+'.'+parts[1]:intPart;})():''} onChangeText={v=>{const raw=v.replace(/,/g,'');if(raw===''||/^\d*\.?\d*$/.test(raw))setBillForm(f=>({...f,amount:raw}));}} placeholder="0.00" placeholderTextColor="#7A9A7A" keyboardType="decimal-pad" />
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>BILL DATE</Text>
+            <TouchableOpacity onPress={()=>{setBillCalViewYear(new Date().getFullYear());setBillCalViewMonth(new Date().getMonth());setBillDatePickerVisible(true);}} style={{backgroundColor:t.card,borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:t.chip,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+              <Text style={{color:billForm.billDate?t.text:t.sub,fontSize:15}}>{billForm.billDate ? new Date(billForm.billDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select date'}</Text>
+              <Text style={{color:t.sub,fontSize:16}}>📅</Text>
             </TouchableOpacity>
             <Modal visible={billDatePickerVisible} transparent animationType='fade'>
               <View style={{flex:1,backgroundColor:'rgba(0,0,0,0.6)',justifyContent:'center',alignItems:'center',padding:24}}>
@@ -1121,27 +1121,27 @@ export default function HomeScreen() {
                       <View>
                         <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
                           <TouchableOpacity onPress={()=>{if(billCalViewMonth===0){setBillCalViewMonth(11);setBillCalViewYear(y=>y-1);}else setBillCalViewMonth(m=>m-1);}} style={{padding:8}}>
-                            <Text style={{color:'#A8D4A8',fontSize:20}}>‹</Text>
+                            <Text style={{color:t.accent,fontSize:20}}>‹</Text>
                           </TouchableOpacity>
-                          <Text style={{color:'#fff',fontSize:16,fontWeight:'600'}}>{monthNames[billCalViewMonth]} {billCalViewYear}</Text>
+                          <Text style={{color:t.text,fontSize:16,fontWeight:'600'}}>{monthNames[billCalViewMonth]} {billCalViewYear}</Text>
                           <TouchableOpacity onPress={()=>{if(billCalViewMonth===11){setBillCalViewMonth(0);setBillCalViewYear(y=>y+1);}else setBillCalViewMonth(m=>m+1);}} style={{padding:8}}>
-                            <Text style={{color:'#A8D4A8',fontSize:20}}>›</Text>
+                            <Text style={{color:t.accent,fontSize:20}}>›</Text>
                           </TouchableOpacity>
                         </View>
                         <View style={{flexDirection:'row',marginBottom:8}}>
-                          {dayNames.map(d=><View key={d} style={{flex:1,alignItems:'center'}}><Text style={{color:'#7A9A7A',fontSize:11,fontWeight:'600'}}>{d}</Text></View>)}
+                          {dayNames.map(d=><View key={d} style={{flex:1,alignItems:'center'}}><Text style={{color:t.sub,fontSize:11,fontWeight:'600'}}>{d}</Text></View>)}
                         </View>
                         <View style={{flexDirection:'row',flexWrap:'wrap'}}>
                           {cells.map((d,i)=>(
                             <TouchableOpacity key={i} onPress={()=>{if(d){const ds=`${billCalViewYear}-${String(billCalViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;setBillForm(f=>({...f,billDate:ds}));setBillDatePickerVisible(false);}}} style={{width:'14.28%',aspectRatio:1,alignItems:'center',justifyContent:'center',marginBottom:2}}>
-                              {d?<View style={{width:32,height:32,borderRadius:16,backgroundColor:isSelected(d)?'#A8D4A8':'transparent',alignItems:'center',justifyContent:'center',borderWidth:isToday(d)&&!isSelected(d)?1:0,borderColor:'#A8D4A8'}}>
-                                <Text style={{color:isSelected(d)?'#1C2E1C':'#fff',fontSize:14,fontWeight:isSelected(d)||isToday(d)?'700':'400'}}>{d}</Text>
+                              {d?<View style={{width:32,height:32,borderRadius:16,backgroundColor:isSelected(d)?t.accent:'transparent',alignItems:'center',justifyContent:'center',borderWidth:isToday(d)&&!isSelected(d)?1:0,borderColor:t.accent}}>
+                                <Text style={{color:isSelected(d)?t.bg:t.text,fontSize:14,fontWeight:isSelected(d)||isToday(d)?'700':'400'}}>{d}</Text>
                               </View>:null}
                             </TouchableOpacity>
                           ))}
                         </View>
-                        <TouchableOpacity onPress={()=>setBillDatePickerVisible(false)} style={{marginTop:16,padding:12,alignItems:'center',borderTopWidth:1,borderTopColor:'#3D5A45'}}>
-                          <Text style={{color:'#7A9A7A',fontSize:15}}>Cancel</Text>
+                        <TouchableOpacity onPress={()=>setBillDatePickerVisible(false)} style={{marginTop:16,padding:12,alignItems:'center',borderTopWidth:1,borderTopColor:t.chip}}>
+                          <Text style={{color:t.sub,fontSize:15}}>Cancel</Text>
                         </TouchableOpacity>
                       </View>
                     );
@@ -1149,10 +1149,10 @@ export default function HomeScreen() {
                 </View>
               </View>
             </Modal>
-            <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DUE DATE (OPTIONAL)</Text>
-            <TouchableOpacity onPress={()=>{setBillDueCalViewYear(new Date().getFullYear());setBillDueCalViewMonth(new Date().getMonth());setBillDueDatePickerVisible(true);}} style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-              <Text style={{color:billForm.dueDate?'#fff':'#7A9A7A',fontSize:15}}>{billForm.dueDate ? new Date(billForm.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select due date'}</Text>
-              <Text style={{color:'#7A9A7A',fontSize:16}}>📅</Text>
+            <Text style={{color:t.sub,fontSize:11,marginBottom:6}}>DUE DATE (OPTIONAL)</Text>
+            <TouchableOpacity onPress={()=>{setBillDueCalViewYear(new Date().getFullYear());setBillDueCalViewMonth(new Date().getMonth());setBillDueDatePickerVisible(true);}} style={{backgroundColor:t.card,borderRadius:10,padding:14,marginBottom:16,borderWidth:1,borderColor:t.chip,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+              <Text style={{color:billForm.dueDate?t.text:t.sub,fontSize:15}}>{billForm.dueDate ? new Date(billForm.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select due date'}</Text>
+              <Text style={{color:t.sub,fontSize:16}}>📅</Text>
             </TouchableOpacity>
             <Modal visible={billDueDatePickerVisible} transparent animationType='fade'>
               <View style={{flex:1,backgroundColor:'rgba(0,0,0,0.6)',justifyContent:'center',alignItems:'center',padding:24}}>
@@ -1169,27 +1169,27 @@ export default function HomeScreen() {
                       <View>
                         <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
                           <TouchableOpacity onPress={()=>{if(billDueCalViewMonth===0){setBillDueCalViewMonth(11);setBillDueCalViewYear(y=>y-1);}else setBillDueCalViewMonth(m=>m-1);}} style={{padding:8}}>
-                            <Text style={{color:'#A8D4A8',fontSize:20}}>‹</Text>
+                            <Text style={{color:t.accent,fontSize:20}}>‹</Text>
                           </TouchableOpacity>
-                          <Text style={{color:'#fff',fontSize:16,fontWeight:'600'}}>{monthNames[billDueCalViewMonth]} {billDueCalViewYear}</Text>
+                          <Text style={{color:t.text,fontSize:16,fontWeight:'600'}}>{monthNames[billDueCalViewMonth]} {billDueCalViewYear}</Text>
                           <TouchableOpacity onPress={()=>{if(billDueCalViewMonth===11){setBillDueCalViewMonth(0);setBillDueCalViewYear(y=>y+1);}else setBillDueCalViewMonth(m=>m+1);}} style={{padding:8}}>
-                            <Text style={{color:'#A8D4A8',fontSize:20}}>›</Text>
+                            <Text style={{color:t.accent,fontSize:20}}>›</Text>
                           </TouchableOpacity>
                         </View>
                         <View style={{flexDirection:'row',marginBottom:8}}>
-                          {dayNames.map(d=><View key={d} style={{flex:1,alignItems:'center'}}><Text style={{color:'#7A9A7A',fontSize:11,fontWeight:'600'}}>{d}</Text></View>)}
+                          {dayNames.map(d=><View key={d} style={{flex:1,alignItems:'center'}}><Text style={{color:t.sub,fontSize:11,fontWeight:'600'}}>{d}</Text></View>)}
                         </View>
                         <View style={{flexDirection:'row',flexWrap:'wrap'}}>
                           {cells.map((d,i)=>(
                             <TouchableOpacity key={i} onPress={()=>{if(d){const ds=`${billDueCalViewYear}-${String(billDueCalViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;setBillForm(f=>({...f,dueDate:ds}));setBillDueDatePickerVisible(false);}}} style={{width:'14.28%',aspectRatio:1,alignItems:'center',justifyContent:'center',marginBottom:2}}>
-                              {d?<View style={{width:32,height:32,borderRadius:16,backgroundColor:isSelected(d)?'#A8D4A8':'transparent',alignItems:'center',justifyContent:'center',borderWidth:isToday(d)&&!isSelected(d)?1:0,borderColor:'#A8D4A8'}}>
-                                <Text style={{color:isSelected(d)?'#1C2E1C':'#fff',fontSize:14,fontWeight:isSelected(d)||isToday(d)?'700':'400'}}>{d}</Text>
+                              {d?<View style={{width:32,height:32,borderRadius:16,backgroundColor:isSelected(d)?t.accent:'transparent',alignItems:'center',justifyContent:'center',borderWidth:isToday(d)&&!isSelected(d)?1:0,borderColor:t.accent}}>
+                                <Text style={{color:isSelected(d)?t.bg:t.text,fontSize:14,fontWeight:isSelected(d)||isToday(d)?'700':'400'}}>{d}</Text>
                               </View>:null}
                             </TouchableOpacity>
                           ))}
                         </View>
-                        <TouchableOpacity onPress={()=>setBillDueDatePickerVisible(false)} style={{marginTop:16,padding:12,alignItems:'center',borderTopWidth:1,borderTopColor:'#3D5A45'}}>
-                          <Text style={{color:'#7A9A7A',fontSize:15}}>Cancel</Text>
+                        <TouchableOpacity onPress={()=>setBillDueDatePickerVisible(false)} style={{marginTop:16,padding:12,alignItems:'center',borderTopWidth:1,borderTopColor:t.chip}}>
+                          <Text style={{color:t.sub,fontSize:15}}>Cancel</Text>
                         </TouchableOpacity>
                       </View>
                     );
@@ -1197,10 +1197,10 @@ export default function HomeScreen() {
                 </View>
               </View>
             </Modal>
-<Text style={{color:'#7A9A7A',fontSize:11,marginBottom:6}}>DESCRIPTION</Text>
-            <TextInput style={{backgroundColor:'#2D4A35',borderRadius:10,padding:14,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={billForm.description} onChangeText={v=>setBillForm(f=>({...f,description:v}))} placeholder="Monthly rent" placeholderTextColor="#7A9A7A" />
-            <TouchableOpacity onPress={()=>{setShowBill(false);setEditingBill(false);}} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginTop:8}}>
-              <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Cancel</Text>
+<Text style={{color:t.sub,fontSize:11,marginBottom:6}}>DESCRIPTION</Text>
+            <TextInput style={{backgroundColor:t.card,borderRadius:10,padding:14,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip}} value={billForm.description} onChangeText={v=>setBillForm(f=>({...f,description:v}))} placeholder="Monthly rent" placeholderTextColor="#7A9A7A" />
+            <TouchableOpacity onPress={()=>{setShowBill(false);setEditingBill(false);}} style={{backgroundColor:t.chip,borderRadius:12,padding:16,alignItems:'center',marginTop:8}}>
+              <Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>Cancel</Text>
             </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -1288,38 +1288,38 @@ export default function HomeScreen() {
       </Modal>
       {/* Customers Modal */}
       <Modal visible={showCustomers} animationType="slide" presentationStyle="pageSheet">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:t.bg}}>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
-              <Text style={{color:'#fff',fontSize:22,fontWeight:'700'}}>Customers</Text>
+              <Text style={{color:t.text,fontSize:22,fontWeight:'700'}}>Customers</Text>
               <TouchableOpacity onPress={()=>setShowCustomers(false)}>
-                <Text style={{color:'#7A9A7A',fontSize:16}}>Close</Text>
+                <Text style={{color:t.sub,fontSize:16}}>Close</Text>
               </TouchableOpacity>
             </View>
-            <Text style={{color:'#7A9A7A',fontSize:13,marginBottom:16}}>{customers.length} customer{customers.length!==1?'s':''}</Text>
-            <TouchableOpacity onPress={()=>{setCustomerForm({name:'',email:'',phone:'',salesperson:'',notes:'',dateAdded:new Date().toISOString().slice(0,10),lastContact:''});setEditingCustomer(null);setShowCustomerForm(true);}} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:14,alignItems:'center',marginBottom:16}}>
-              <Text style={{color:'#A8D4A8',fontSize:15,fontWeight:'600'}}>+ Add Customer</Text>
+            <Text style={{color:t.sub,fontSize:13,marginBottom:16}}>{customers.length} customer{customers.length!==1?'s':''}</Text>
+            <TouchableOpacity onPress={()=>{setCustomerForm({name:'',email:'',phone:'',salesperson:'',notes:'',dateAdded:new Date().toISOString().slice(0,10),lastContact:''});setEditingCustomer(null);setShowCustomerForm(true);}} style={{backgroundColor:t.chip,borderRadius:12,padding:14,alignItems:'center',marginBottom:16}}>
+              <Text style={{color:t.accent,fontSize:15,fontWeight:'600'}}>+ Add Customer</Text>
             </TouchableOpacity>
             {showCustomerForm&&(
-              <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:16}}>
-                <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600',marginBottom:12}}>{editingCustomer?'Edit Customer':'New Customer'}</Text>
-                <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>NAME *</Text>
-                <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:10,borderWidth:1,borderColor:'#3D5A45'}} value={customerForm.name} onChangeText={v=>setCustomerForm(f=>({...f,name:v}))} placeholder='Acme Corp' placeholderTextColor='#7A9A7A' />
-                <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>EMAIL</Text>
-                <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:10,borderWidth:1,borderColor:'#3D5A45'}} value={customerForm.email} onChangeText={v=>setCustomerForm(f=>({...f,email:v}))} placeholder='billing@acme.com' placeholderTextColor='#7A9A7A' keyboardType='email-address' />
-                <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>PHONE</Text>
-                <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:10,borderWidth:1,borderColor:'#3D5A45'}} value={customerForm.phone} onChangeText={v=>{const d=v.replace(/\D/g,'').slice(0,10);let p=d;if(d.length>=7)p='('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6);else if(d.length>=4)p='('+d.slice(0,3)+') '+d.slice(3);setCustomerForm(f=>({...f,phone:p}));}} placeholder='(555) 000-0000' placeholderTextColor='#7A9A7A' keyboardType='phone-pad' />
-                <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>SALESPERSON</Text>
-                <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={customerForm.salesperson} onChangeText={v=>setCustomerForm(f=>({...f,salesperson:v}))} placeholder='Jane Smith' placeholderTextColor='#7A9A7A' />
-                <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>DATE ADDED</Text>
-                <TouchableOpacity onPress={()=>{setShowCustomerDatePicker(true);}} style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between'}}>
-                  <Text style={{color:customerForm.dateAdded?'#fff':'#7A9A7A',fontSize:15}}>{customerForm.dateAdded ? new Date(customerForm.dateAdded+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select date'}</Text>
+              <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:16}}>
+                <Text style={{color:t.accent,fontSize:16,fontWeight:'600',marginBottom:12}}>{editingCustomer?'Edit Customer':'New Customer'}</Text>
+                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>NAME *</Text>
+                <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:10,borderWidth:1,borderColor:t.chip}} value={customerForm.name} onChangeText={v=>setCustomerForm(f=>({...f,name:v}))} placeholder='Acme Corp' placeholderTextColor={t.sub} />
+                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>EMAIL</Text>
+                <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:10,borderWidth:1,borderColor:t.chip}} value={customerForm.email} onChangeText={v=>setCustomerForm(f=>({...f,email:v}))} placeholder='billing@acme.com' placeholderTextColor={t.sub} keyboardType='email-address' />
+                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>PHONE</Text>
+                <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:10,borderWidth:1,borderColor:t.chip}} value={customerForm.phone} onChangeText={v=>{const d=v.replace(/\D/g,'').slice(0,10);let p=d;if(d.length>=7)p='('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6);else if(d.length>=4)p='('+d.slice(0,3)+') '+d.slice(3);setCustomerForm(f=>({...f,phone:p}));}} placeholder='(555) 000-0000' placeholderTextColor={t.sub} keyboardType='phone-pad' />
+                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>SALESPERSON</Text>
+                <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip}} value={customerForm.salesperson} onChangeText={v=>setCustomerForm(f=>({...f,salesperson:v}))} placeholder='Jane Smith' placeholderTextColor={t.sub} />
+                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>DATE ADDED</Text>
+                <TouchableOpacity onPress={()=>{setShowCustomerDatePicker(true);}} style={{backgroundColor:t.bg,borderRadius:8,padding:12,marginBottom:16,borderWidth:1,borderColor:t.chip,flexDirection:'row',justifyContent:'space-between'}}>
+                  <Text style={{color:customerForm.dateAdded?t.text:t.sub,fontSize:15}}>{customerForm.dateAdded ? new Date(customerForm.dateAdded+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select date'}</Text>
                 </TouchableOpacity>
-                <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>NOTES</Text>
-                <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',minHeight:80}} value={customerForm.notes} onChangeText={v=>setCustomerForm(f=>({...f,notes:v}))} placeholder='Notes about this customer' placeholderTextColor='#7A9A7A' multiline />
+                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>NOTES</Text>
+                <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip,minHeight:80}} value={customerForm.notes} onChangeText={v=>setCustomerForm(f=>({...f,notes:v}))} placeholder='Notes about this customer' placeholderTextColor={t.sub} multiline />
 <View style={{flexDirection:'row',gap:10}}>
-                  <TouchableOpacity onPress={()=>setShowCustomerForm(false)} style={{flex:1,backgroundColor:'#3D5A45',borderRadius:10,padding:12,alignItems:'center'}}>
-                    <Text style={{color:'#A8D4A8',fontSize:14}}>Cancel</Text>
+                  <TouchableOpacity onPress={()=>setShowCustomerForm(false)} style={{flex:1,backgroundColor:t.chip,borderRadius:10,padding:12,alignItems:'center'}}>
+                    <Text style={{color:t.accent,fontSize:14}}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={async()=>{
                     if(!customerForm.name.trim())return Alert.alert('Error','Name is required');
@@ -1333,61 +1333,61 @@ export default function HomeScreen() {
                       loadCustomers(org.id,token);
                     }catch(e){Alert.alert('Error','Could not save customer');}
                   }} style={{flex:2,backgroundColor:'#2D6A4F',borderRadius:10,padding:12,alignItems:'center'}}>
-                    <Text style={{color:'#fff',fontSize:14,fontWeight:'600'}}>Save</Text>
+                    <Text style={{color:t.text,fontSize:14,fontWeight:'600'}}>Save</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             )}
             {customers.map(c=>(
-              <View key={c.id} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:12}}>
+              <View key={c.id} style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12}}>
                 <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-                  <Text style={{color:'#fff',fontSize:16,fontWeight:'600'}}>{c.name}</Text>
+                  <Text style={{color:t.text,fontSize:16,fontWeight:'600'}}>{c.name}</Text>
                   <TouchableOpacity onPress={()=>{setCustomerForm({name:c.name||'',email:c.email||'',phone:c.phone||'',salesperson:c.salesperson||''});setEditingCustomer(c);setShowCustomerForm(true);}}>
-                    <Text style={{color:'#7A9A7A',fontSize:13}}>Edit</Text>
+                    <Text style={{color:t.sub,fontSize:13}}>Edit</Text>
                   </TouchableOpacity>
                 </View>
-                {c.email?<Text style={{color:'#7A9A7A',fontSize:13,marginTop:4}}>{c.email}</Text>:null}
-                {c.phone?<Text style={{color:'#7A9A7A',fontSize:13,marginTop:2}}>{c.phone}</Text>:null}
-                {c.salesperson?<Text style={{color:'#7A9A7A',fontSize:12,marginTop:4}}>Rep: {c.salesperson}</Text>:null}
+                {c.email?<Text style={{color:t.sub,fontSize:13,marginTop:4}}>{c.email}</Text>:null}
+                {c.phone?<Text style={{color:t.sub,fontSize:13,marginTop:2}}>{c.phone}</Text>:null}
+                {c.salesperson?<Text style={{color:t.sub,fontSize:12,marginTop:4}}>Rep: {c.salesperson}</Text>:null}
               </View>
             ))}
-            {customers.length===0&&<Text style={{color:'#7A9A7A',textAlign:'center',marginTop:40}}>No customers yet</Text>}
+            {customers.length===0&&<Text style={{color:t.sub,textAlign:'center',marginTop:40}}>No customers yet</Text>}
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
 
       {/* Vendors Modal */}
       <Modal visible={showVendors} animationType="slide" presentationStyle="pageSheet">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:'#1C2E1C'}}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:t.bg}}>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
-              <Text style={{color:'#fff',fontSize:22,fontWeight:'700'}}>Vendors</Text>
+              <Text style={{color:t.text,fontSize:22,fontWeight:'700'}}>Vendors</Text>
               <TouchableOpacity onPress={()=>setShowVendors(false)}>
-                <Text style={{color:'#7A9A7A',fontSize:16}}>Close</Text>
+                <Text style={{color:t.sub,fontSize:16}}>Close</Text>
               </TouchableOpacity>
             </View>
-            <Text style={{color:'#7A9A7A',fontSize:13,marginBottom:16}}>{vendors.length} vendor{vendors.length!==1?'s':''}</Text>
-            <TouchableOpacity onPress={()=>{setVendorForm({name:'',email:'',phone:'',notes:'',dateAdded:new Date().toISOString().slice(0,10),lastContact:''});setEditingVendor(null);setShowVendorForm(true);}} style={{backgroundColor:'#3D5A45',borderRadius:12,padding:14,alignItems:'center',marginBottom:16}}>
-              <Text style={{color:'#A8D4A8',fontSize:15,fontWeight:'600'}}>+ Add Vendor</Text>
+            <Text style={{color:t.sub,fontSize:13,marginBottom:16}}>{vendors.length} vendor{vendors.length!==1?'s':''}</Text>
+            <TouchableOpacity onPress={()=>{setVendorForm({name:'',email:'',phone:'',notes:'',dateAdded:new Date().toISOString().slice(0,10),lastContact:''});setEditingVendor(null);setShowVendorForm(true);}} style={{backgroundColor:t.chip,borderRadius:12,padding:14,alignItems:'center',marginBottom:16}}>
+              <Text style={{color:t.accent,fontSize:15,fontWeight:'600'}}>+ Add Vendor</Text>
             </TouchableOpacity>
             {showVendorForm&&(
-              <View style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:16}}>
-                <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600',marginBottom:12}}>{editingVendor?'Edit Vendor':'New Vendor'}</Text>
-                <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>NAME *</Text>
-                <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:10,borderWidth:1,borderColor:'#3D5A45'}} value={vendorForm.name} onChangeText={v=>setVendorForm(f=>({...f,name:v}))} placeholder='Vendor Name' placeholderTextColor='#7A9A7A' />
-                <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>EMAIL</Text>
-                <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:10,borderWidth:1,borderColor:'#3D5A45'}} value={vendorForm.email} onChangeText={v=>setVendorForm(f=>({...f,email:v}))} placeholder='vendor@example.com' placeholderTextColor='#7A9A7A' keyboardType='email-address' />
-                <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>PHONE</Text>
-                <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45'}} value={vendorForm.phone} onChangeText={v=>{const d=v.replace(/\D/g,'').slice(0,10);let p=d;if(d.length>=7)p='('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6);else if(d.length>=4)p='('+d.slice(0,3)+') '+d.slice(3);setVendorForm(f=>({...f,phone:p}));}} placeholder='(555) 000-0000' placeholderTextColor='#7A9A7A' keyboardType='phone-pad' />
-                <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>DATE ADDED</Text>
-                <TouchableOpacity style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',flexDirection:'row',justifyContent:'space-between'}}>
-                  <Text style={{color:vendorForm.dateAdded?'#fff':'#7A9A7A',fontSize:15}}>{vendorForm.dateAdded ? new Date(vendorForm.dateAdded+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select date'}</Text>
+              <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:16}}>
+                <Text style={{color:t.accent,fontSize:16,fontWeight:'600',marginBottom:12}}>{editingVendor?'Edit Vendor':'New Vendor'}</Text>
+                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>NAME *</Text>
+                <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:10,borderWidth:1,borderColor:t.chip}} value={vendorForm.name} onChangeText={v=>setVendorForm(f=>({...f,name:v}))} placeholder='Vendor Name' placeholderTextColor={t.sub} />
+                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>EMAIL</Text>
+                <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:10,borderWidth:1,borderColor:t.chip}} value={vendorForm.email} onChangeText={v=>setVendorForm(f=>({...f,email:v}))} placeholder='vendor@example.com' placeholderTextColor={t.sub} keyboardType='email-address' />
+                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>PHONE</Text>
+                <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip}} value={vendorForm.phone} onChangeText={v=>{const d=v.replace(/\D/g,'').slice(0,10);let p=d;if(d.length>=7)p='('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6);else if(d.length>=4)p='('+d.slice(0,3)+') '+d.slice(3);setVendorForm(f=>({...f,phone:p}));}} placeholder='(555) 000-0000' placeholderTextColor={t.sub} keyboardType='phone-pad' />
+                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>DATE ADDED</Text>
+                <TouchableOpacity style={{backgroundColor:t.bg,borderRadius:8,padding:12,marginBottom:16,borderWidth:1,borderColor:t.chip,flexDirection:'row',justifyContent:'space-between'}}>
+                  <Text style={{color:vendorForm.dateAdded?t.text:t.sub,fontSize:15}}>{vendorForm.dateAdded ? new Date(vendorForm.dateAdded+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select date'}</Text>
                 </TouchableOpacity>
-                <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>NOTES</Text>
-                <TextInput style={{backgroundColor:'#1C2E1C',borderRadius:8,padding:12,color:'#fff',fontSize:15,marginBottom:16,borderWidth:1,borderColor:'#3D5A45',minHeight:80}} value={vendorForm.notes} onChangeText={v=>setVendorForm(f=>({...f,notes:v}))} placeholder='Notes about this vendor' placeholderTextColor='#7A9A7A' multiline />
+                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>NOTES</Text>
+                <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip,minHeight:80}} value={vendorForm.notes} onChangeText={v=>setVendorForm(f=>({...f,notes:v}))} placeholder='Notes about this vendor' placeholderTextColor={t.sub} multiline />
 <View style={{flexDirection:'row',gap:10}}>
-                  <TouchableOpacity onPress={()=>setShowVendorForm(false)} style={{flex:1,backgroundColor:'#3D5A45',borderRadius:10,padding:12,alignItems:'center'}}>
-                    <Text style={{color:'#A8D4A8',fontSize:14}}>Cancel</Text>
+                  <TouchableOpacity onPress={()=>setShowVendorForm(false)} style={{flex:1,backgroundColor:t.chip,borderRadius:10,padding:12,alignItems:'center'}}>
+                    <Text style={{color:t.accent,fontSize:14}}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={async()=>{
                     if(!vendorForm.name.trim())return Alert.alert('Error','Name is required');
@@ -1401,24 +1401,24 @@ export default function HomeScreen() {
                       loadVendors(org.id,token);
                     }catch(e){Alert.alert('Error','Could not save vendor');}
                   }} style={{flex:2,backgroundColor:'#2D6A4F',borderRadius:10,padding:12,alignItems:'center'}}>
-                    <Text style={{color:'#fff',fontSize:14,fontWeight:'600'}}>Save</Text>
+                    <Text style={{color:t.text,fontSize:14,fontWeight:'600'}}>Save</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             )}
             {vendors.map(v=>(
-              <View key={v.id} style={{backgroundColor:'#2D4A35',borderRadius:12,padding:16,marginBottom:12}}>
+              <View key={v.id} style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12}}>
                 <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-                  <Text style={{color:'#fff',fontSize:16,fontWeight:'600'}}>{v.name}</Text>
+                  <Text style={{color:t.text,fontSize:16,fontWeight:'600'}}>{v.name}</Text>
                   <TouchableOpacity onPress={()=>{setVendorForm({name:v.name||'',email:v.email||'',phone:v.phone||''});setEditingVendor(v);setShowVendorForm(true);}}>
-                    <Text style={{color:'#7A9A7A',fontSize:13}}>Edit</Text>
+                    <Text style={{color:t.sub,fontSize:13}}>Edit</Text>
                   </TouchableOpacity>
                 </View>
-                {v.email?<Text style={{color:'#7A9A7A',fontSize:13,marginTop:4}}>{v.email}</Text>:null}
-                {v.phone?<Text style={{color:'#7A9A7A',fontSize:13,marginTop:2}}>{v.phone}</Text>:null}
+                {v.email?<Text style={{color:t.sub,fontSize:13,marginTop:4}}>{v.email}</Text>:null}
+                {v.phone?<Text style={{color:t.sub,fontSize:13,marginTop:2}}>{v.phone}</Text>:null}
               </View>
             ))}
-            {vendors.length===0&&<Text style={{color:'#7A9A7A',textAlign:'center',marginTop:40}}>No vendors yet</Text>}
+            {vendors.length===0&&<Text style={{color:t.sub,textAlign:'center',marginTop:40}}>No vendors yet</Text>}
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
