@@ -18,6 +18,13 @@ function inPeriod(dateVal, period) {
 const EXPENSE_CATEGORIES = ['Advertising & Marketing','Bank Charges','Equipment','Insurance','Legal & Professional Fees','Meals & Entertainment','Office Supplies','Payroll','Rent & Lease','Software & Subscriptions','Taxes & Licenses','Travel','Utilities','Vehicle','Other'];
 const BILL_CATEGORIES = ['Rent & Lease','Utilities','Insurance','Loan Payment','Supplier Invoice','Equipment Lease','Professional Services','Payroll','Taxes','Software & Subscriptions','Other'];
 
+// App color themes. O = Original forest green (default), B = Evergreen (light), C = Slate (premium dark).
+const THEMES = {
+  O: { key:'O', name:'Original',  bg:'#1C2E1C', card:'#2D4A35', border:'rgba(255,255,255,0.06)', text:'#FFFFFF', sub:'#7A9A7A', accent:'#A8D4A8', gold:'#FFD166', chip:'#3D5A45' },
+  B: { key:'B', name:'Evergreen', bg:'#F4F1E9', card:'#FFFFFF', border:'rgba(0,0,0,0.08)',       text:'#18271C', sub:'#6B7A6B', accent:'#2D7A4A', gold:'#B9852B', chip:'#EAE6DA' },
+  C: { key:'C', name:'Slate',     bg:'#16181D', card:'#21252C', border:'rgba(255,255,255,0.07)', text:'#FFFFFF', sub:'#9AA3AE', accent:'#5FCF9A', gold:'#E8B94A', chip:'#2A2F38' },
+};
+
 export default function HomeScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,6 +45,7 @@ export default function HomeScreen() {
   const [pendingInvoiceNav, setPendingInvoiceNav] = useState(null);
   const [pendingExpenseNav, setPendingExpenseNav] = useState(null);
   const [pendingBillNav, setPendingBillNav] = useState(null);
+  const [themeKey, setThemeKey] = useState('O');
   const [showRegister, setShowRegister] = useState(false);
   const [showReports, setShowReports] = useState(false);
   const [reportPeriod, setReportPeriod] = useState('ytd');
@@ -423,49 +431,53 @@ export default function HomeScreen() {
 
   const totalInvoiced = invoices.reduce((s,i)=>s+Number(i.total),0);
   const totalExpenses = expenses.reduce((s,e)=>s+Number(e.amount),0);
+  const t = THEMES[themeKey] || THEMES.O;
 
   return (
-    <ScrollView style={{flex:1,backgroundColor:'#1C2E1C'}}>
+    <ScrollView style={{flex:1,backgroundColor:t.bg}}>
       <View style={{padding:24,paddingTop:60,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
         <View>
-          <Text style={{color:'#7A9A7A',fontSize:14}}>Welcome back,</Text>
-          <Text style={{color:'#fff',fontSize:22,fontWeight:'700'}}>{user.fullName}</Text>
+          <Text style={{color:t.sub,fontSize:14}}>Welcome back,</Text>
+          <Text style={{color:t.text,fontSize:22,fontWeight:'700'}}>{user.fullName}</Text>
         </View>
-        <TouchableOpacity onPress={()=>setUser(null)} style={{backgroundColor:'#3D5A45',borderRadius:8,padding:8,paddingHorizontal:12}}>
-          <Text style={{color:'#A8D4A8',fontSize:13}}>Sign out</Text>
+        <TouchableOpacity onPress={()=>setUser(null)} style={{backgroundColor:t.chip,borderRadius:8,padding:8,paddingHorizontal:12}}>
+          <Text style={{color:t.accent,fontSize:13}}>Sign out</Text>
         </TouchableOpacity>
       </View>
-      <Text style={{color:'#7A9A7A',fontSize:13,paddingHorizontal:24,marginBottom:16}}>{org?.name}</Text>
+      <Text style={{color:t.sub,fontSize:13,paddingHorizontal:24,marginBottom:16}}>{org?.name}</Text>
       <View style={{flexDirection:'row',gap:12,paddingHorizontal:24,marginBottom:24}}>
-        <View style={{flex:1,backgroundColor:'#2D4A35',borderRadius:12,padding:16}}>
-          <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>TOTAL INVOICED</Text>
-          <Text style={{color:'#A8D4A8',fontSize:20,fontWeight:'700'}}>{fmt(totalInvoiced)}</Text>
-          <Text style={{color:'#7A9A7A',fontSize:11,marginTop:4}}>{invoices.length} invoices</Text>
+        <View style={{flex:1,backgroundColor:t.card,borderColor:t.border,borderWidth:1,borderRadius:12,padding:16}}>
+          <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>TOTAL INVOICED</Text>
+          <Text style={{color:t.accent,fontSize:20,fontWeight:'700'}}>{fmt(totalInvoiced)}</Text>
+          <Text style={{color:t.sub,fontSize:11,marginTop:4}}>{invoices.length} invoices</Text>
         </View>
-        <View style={{flex:1,backgroundColor:'#2D4A35',borderRadius:12,padding:16}}>
-          <Text style={{color:'#7A9A7A',fontSize:11,marginBottom:4}}>TOTAL EXPENSES</Text>
-          <Text style={{color:'#A8D4A8',fontSize:20,fontWeight:'700'}}>{fmt(totalExpenses)}</Text>
-          <Text style={{color:'#7A9A7A',fontSize:11,marginTop:4}}>{expenses.length} expenses</Text>
+        <View style={{flex:1,backgroundColor:t.card,borderColor:t.border,borderWidth:1,borderRadius:12,padding:16}}>
+          <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>TOTAL EXPENSES</Text>
+          <Text style={{color:t.gold,fontSize:20,fontWeight:'700'}}>{fmt(totalExpenses)}</Text>
+          <Text style={{color:t.sub,fontSize:11,marginTop:4}}>{expenses.length} expenses</Text>
         </View>
       </View>
-      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#2D4A35',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>setShowInvoiceList(true)}>
-        <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Invoices</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#3D5A45',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>setShowExpenseList(true)}>
-        <Text style={{color:'#A8D4A8',fontSize:16,fontWeight:'600'}}>Expenses</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#4A3D2D',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>setShowBillList(true)}>
-        <Text style={{color:'#D4A8A8',fontSize:16,fontWeight:'600'}}>Bills</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#1C3A4A',borderRadius:12,padding:16,alignItems:'center',marginBottom:24}} onPress={()=>setShowReports(true)}>
-        <Text style={{color:'#A8C4D4',fontSize:16,fontWeight:'600'}}>View Reports</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#2D3A4A',borderRadius:12,padding:16,alignItems:'center',marginBottom:12}} onPress={()=>setShowCustomers(true)}>
-        <Text style={{color:'#A8B4D4',fontSize:16,fontWeight:'600'}}>Customers</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={{marginHorizontal:24,backgroundColor:'#3A2D4A',borderRadius:12,padding:16,alignItems:'center',marginBottom:24}} onPress={()=>setShowVendors(true)}>
-        <Text style={{color:'#C4A8D4',fontSize:16,fontWeight:'600'}}>Vendors</Text>
-      </TouchableOpacity>
+      {[{ic:'🧾',label:'Invoices',on:()=>setShowInvoiceList(true)},{ic:'💳',label:'Expenses',on:()=>setShowExpenseList(true)},{ic:'📄',label:'Bills',on:()=>setShowBillList(true)},{ic:'📊',label:'Reports',on:()=>setShowReports(true)},{ic:'👥',label:'Customers',on:()=>setShowCustomers(true)},{ic:'🏢',label:'Vendors',on:()=>setShowVendors(true)}].map(item=>(
+        <TouchableOpacity key={item.label} onPress={item.on} style={{marginHorizontal:24,backgroundColor:t.card,borderColor:t.border,borderWidth:1,borderRadius:12,padding:16,marginBottom:10,flexDirection:'row',alignItems:'center',gap:12}}>
+          <Text style={{fontSize:16}}>{item.ic}</Text>
+          <Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>{item.label}</Text>
+        </TouchableOpacity>
+      ))}
+      <View style={{paddingHorizontal:24,marginTop:14,marginBottom:30}}>
+        <Text style={{color:t.sub,fontSize:11,fontWeight:'700',letterSpacing:1,marginBottom:10}}>THEME</Text>
+        <View style={{flexDirection:'row',gap:10}}>
+          {Object.values(THEMES).map(th=>(
+            <TouchableOpacity key={th.key} onPress={()=>setThemeKey(th.key)} style={{flex:1,backgroundColor:th.card,borderRadius:12,borderWidth:themeKey===th.key?2:1,borderColor:themeKey===th.key?th.accent:t.border,padding:12,alignItems:'center'}}>
+              <View style={{flexDirection:'row',gap:4,marginBottom:8}}>
+                <View style={{width:14,height:14,borderRadius:7,backgroundColor:th.bg,borderWidth:1,borderColor:'rgba(128,128,128,0.3)'}}/>
+                <View style={{width:14,height:14,borderRadius:7,backgroundColor:th.accent}}/>
+                <View style={{width:14,height:14,borderRadius:7,backgroundColor:th.gold}}/>
+              </View>
+              <Text style={{color:th.text,fontSize:12,fontWeight:'600'}}>{th.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
 
       {/* Invoices now live in the Invoices list screen */}
 
