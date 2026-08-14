@@ -138,12 +138,13 @@ export default function HomeScreen() {
       const j = await r.json();
       const d = j.data || j;
       if (d.user) {
-        setUser(d.user); setOrg(d.orgs?.[0]); setToken(d.accessToken);
-        loadInvoices(d.orgs?.[0]?.id, d.accessToken);
-        loadExpenses(d.orgs?.[0]?.id, d.accessToken);
-        loadBills(d.orgs?.[0]?.id, d.accessToken);
-        loadCustomers(d.orgs?.[0]?.id, d.accessToken);
-        loadVendors(d.orgs?.[0]?.id, d.accessToken);
+        const activeOrg = d.orgs?.[0] || d.org;
+        setUser(d.user); setOrg(activeOrg); setToken(d.accessToken);
+        loadInvoices(activeOrg?.id, d.accessToken);
+        loadExpenses(activeOrg?.id, d.accessToken);
+        loadBills(activeOrg?.id, d.accessToken);
+        loadCustomers(activeOrg?.id, d.accessToken);
+        loadVendors(activeOrg?.id, d.accessToken);
       } else Alert.alert('Error', 'Invalid credentials');
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
   }
@@ -155,13 +156,14 @@ export default function HomeScreen() {
       const j = await r.json();
       const d = j.data || j;
       if (d.user) {
-        setUser(d.user); setOrg(d.orgs?.[0]); setToken(d.accessToken);
+        const newOrg = d.orgs?.[0] || d.org;
+        setUser(d.user); setOrg(newOrg); setToken(d.accessToken);
         setShowRegister(false);
-        loadInvoices(d.orgs?.[0]?.id, d.accessToken);
-        loadExpenses(d.orgs?.[0]?.id, d.accessToken);
-        loadBills(d.orgs?.[0]?.id, d.accessToken);
-        loadCustomers(d.orgs?.[0]?.id, d.accessToken);
-        loadVendors(d.orgs?.[0]?.id, d.accessToken);
+        loadInvoices(newOrg?.id, d.accessToken);
+        loadExpenses(newOrg?.id, d.accessToken);
+        loadBills(newOrg?.id, d.accessToken);
+        loadCustomers(newOrg?.id, d.accessToken);
+        loadVendors(newOrg?.id, d.accessToken);
       } else Alert.alert('Error', j.message || 'Registration failed');
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
   }
@@ -453,6 +455,63 @@ export default function HomeScreen() {
     ]);
   }
 
+  async function deleteAccount() {
+    Alert.alert(
+      'Delete Account',
+      'This permanently deletes your account and ALL of your data — invoices, bills, expenses, customers, and vendors. This cannot be undone.',
+      [
+        { text:'Cancel', style:'cancel' },
+        { text:'Continue', style:'destructive', onPress: () => {
+          Alert.prompt('Confirm your password', 'For your security, enter your password to permanently delete your account.', [
+            { text:'Cancel', style:'cancel' },
+            { text:'Delete Forever', style:'destructive', onPress: async (pw) => {
+              if (!pw) { Alert.alert('Password required', 'Please enter your password to delete your account.'); return; }
+              try {
+                const r = await fetch(API+'/auth/account', { method:'DELETE', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify({ password: pw }) });
+                const j = await r.json();
+                if (j.success) {
+                  AsyncStorage.removeItem('recurringRules').catch(()=>{});
+                  setRecurringRules([]);
+                  setInvoices([]); setExpenses([]); setBills([]); setCustomers([]); setVendors([]);
+                  setToken(null); setOrg(null); setUser(null);
+                  Alert.alert('Account deleted', 'Your account and all data have been permanently removed.');
+                } else Alert.alert('Could not delete', j.message || 'Please check your password and try again.');
+              } catch(e) { Alert.alert('Error', 'Cannot connect. Please try again.'); }
+            }}
+          ], 'secure-text');
+        }}
+      ]
+    );
+  }
+
+  async function deleteCustomer(c) {
+    Alert.alert('Delete Customer', 'Delete "'+(c.name||'this customer')+'"? This cannot be undone.', [
+      { text:'Cancel', style:'cancel' },
+      { text:'Delete', style:'destructive', onPress: async () => {
+        try {
+          const r = await fetch(API+'/orgs/'+org.id+'/contacts/'+c.id, { method:'DELETE', headers:{'Authorization':'Bearer '+token} });
+          const j = await r.json();
+          if (j.success) { loadCustomers(org.id, token); }
+          else Alert.alert('Could not delete', 'This customer may have invoices linked to them. Remove those invoices first, then try again.');
+        } catch(e) { Alert.alert('Error', 'Cannot connect'); }
+      }}
+    ]);
+  }
+
+  async function deleteVendor(v) {
+    Alert.alert('Delete Vendor', 'Delete "'+(v.name||'this vendor')+'"? This cannot be undone.', [
+      { text:'Cancel', style:'cancel' },
+      { text:'Delete', style:'destructive', onPress: async () => {
+        try {
+          const r = await fetch(API+'/orgs/'+org.id+'/contacts/'+v.id, { method:'DELETE', headers:{'Authorization':'Bearer '+token} });
+          const j = await r.json();
+          if (j.success) { loadVendors(org.id, token); }
+          else Alert.alert('Could not delete', j.message || 'Please try again.');
+        } catch(e) { Alert.alert('Error', 'Cannot connect'); }
+      }}
+    ]);
+  }
+
   function editInvoice(inv) {
     setSelectedInvoice(inv);
     setInvoiceForm({ clientName: inv.contact?.name||'', clientEmail: inv.contact?.email||'', poNumber: inv.poNumber||'', notes: inv.notes||'', taxRate: inv.taxRate||'', shipping: inv.shipping||'', discount: inv.discount||'', salesperson: inv.salesperson||'', recurring: ruleForRecord('invoice', inv.id)?.freq || '' });
@@ -568,7 +627,7 @@ export default function HomeScreen() {
           <Text style={{color:t.sub,fontSize:11,marginTop:4}}>{expenses.length} expenses</Text>
         </View>
       </View>
-      {[{ic:'🧾',label:'Invoices',on:()=>setShowInvoiceList(true)},{ic:'💳',label:'Expenses',on:()=>setShowExpenseList(true)},{ic:'📄',label:'Bills',on:()=>setShowBillList(true)},{ic:'📊',label:'Reports',on:()=>setShowReports(true)},{ic:'👥',label:'Customers',on:()=>setShowCustomers(true)},{ic:'🏢',label:'Vendors',on:()=>setShowVendors(true)}].map(item=>(
+      {[{ic:'🧾',label:'Invoices',on:()=>{if(org&&token)loadInvoices(org.id,token);setShowInvoiceList(true);}},{ic:'💳',label:'Expenses',on:()=>{if(org&&token)loadExpenses(org.id,token);setShowExpenseList(true);}},{ic:'📄',label:'Bills',on:()=>{if(org&&token)loadBills(org.id,token);setShowBillList(true);}},{ic:'📊',label:'Reports',on:()=>{if(org&&token){loadInvoices(org.id,token);loadExpenses(org.id,token);loadBills(org.id,token);}setShowReports(true);}},{ic:'👥',label:'Customers',on:()=>{if(org&&token)loadCustomers(org.id,token);setShowCustomers(true);}},{ic:'🏢',label:'Vendors',on:()=>{if(org&&token)loadVendors(org.id,token);setShowVendors(true);}}].map(item=>(
         <TouchableOpacity key={item.label} onPress={item.on} style={{marginHorizontal:24,backgroundColor:t.card,borderColor:t.border,borderWidth:1,borderRadius:12,padding:16,marginBottom:10,flexDirection:'row',alignItems:'center',gap:12}}>
           <Text style={{fontSize:16}}>{item.ic}</Text>
           <Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>{item.label}</Text>
@@ -588,6 +647,14 @@ export default function HomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
+      </View>
+
+      <View style={{paddingHorizontal:24,marginBottom:44}}>
+        <Text style={{color:t.sub,fontSize:11,fontWeight:'700',letterSpacing:1,marginBottom:10}}>ACCOUNT</Text>
+        <TouchableOpacity onPress={deleteAccount} style={{borderWidth:1,borderColor:t.danger,borderRadius:12,padding:14,alignItems:'center'}}>
+          <Text style={{color:t.danger,fontSize:15,fontWeight:'600'}}>Delete Account</Text>
+        </TouchableOpacity>
+        <Text style={{color:t.sub,fontSize:11,marginTop:8,textAlign:'center'}}>Permanently deletes your account and all your data.</Text>
       </View>
 
       {/* Invoices now live in the Invoices list screen */}
@@ -1589,9 +1656,14 @@ export default function HomeScreen() {
               <View key={c.id} style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12}}>
                 <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
                   <Text style={{color:t.text,fontSize:16,fontWeight:'600'}}>{c.name}</Text>
-                  <TouchableOpacity onPress={()=>{setCustomerForm({name:c.name||'',email:c.email||'',phone:c.phone||'',salesperson:c.salesperson||''});setEditingCustomer(c);setShowCustomerForm(true);}}>
-                    <Text style={{color:t.sub,fontSize:13}}>Edit</Text>
-                  </TouchableOpacity>
+                  <View style={{flexDirection:'row',gap:18}}>
+                    <TouchableOpacity onPress={()=>{setCustomerForm({name:c.name||'',email:c.email||'',phone:c.phone||'',salesperson:c.salesperson||''});setEditingCustomer(c);setShowCustomerForm(true);}}>
+                      <Text style={{color:t.sub,fontSize:13}}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={()=>deleteCustomer(c)}>
+                      <Text style={{color:t.danger,fontSize:13}}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 {c.email?<Text style={{color:t.sub,fontSize:13,marginTop:4}}>{c.email}</Text>:null}
                 {c.phone?<Text style={{color:t.sub,fontSize:13,marginTop:2}}>{c.phone}</Text>:null}
@@ -1657,9 +1729,14 @@ export default function HomeScreen() {
               <View key={v.id} style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12}}>
                 <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
                   <Text style={{color:t.text,fontSize:16,fontWeight:'600'}}>{v.name}</Text>
-                  <TouchableOpacity onPress={()=>{setVendorForm({name:v.name||'',email:v.email||'',phone:v.phone||''});setEditingVendor(v);setShowVendorForm(true);}}>
-                    <Text style={{color:t.sub,fontSize:13}}>Edit</Text>
-                  </TouchableOpacity>
+                  <View style={{flexDirection:'row',gap:18}}>
+                    <TouchableOpacity onPress={()=>{setVendorForm({name:v.name||'',email:v.email||'',phone:v.phone||''});setEditingVendor(v);setShowVendorForm(true);}}>
+                      <Text style={{color:t.sub,fontSize:13}}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={()=>deleteVendor(v)}>
+                      <Text style={{color:t.danger,fontSize:13}}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 {v.email?<Text style={{color:t.sub,fontSize:13,marginTop:4}}>{v.email}</Text>:null}
                 {v.phone?<Text style={{color:t.sub,fontSize:13,marginTop:2}}>{v.phone}</Text>:null}
