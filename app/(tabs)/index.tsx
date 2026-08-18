@@ -104,7 +104,7 @@ export default function HomeScreen() {
   const [customerForm, setCustomerForm] = useState({ name:'', company:'', contactName:'', email:'', phone:'', cellPhone:'', officePhone:'', salesperson:'', notes:'', dateAdded:new Date().toISOString().slice(0,10), lastContact:'' });
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
-  const [vendorForm, setVendorForm] = useState({ name:'', email:'', phone:'', notes:'', dateAdded:new Date().toISOString().slice(0,10), lastContact:'' });
+  const [vendorForm, setVendorForm] = useState({ name:'', company:'', cellPhone:'', officePhone:'', email:'', phone:'', notes:'', dateAdded:new Date().toISOString().slice(0,10), lastContact:'' });
   const [showVendorForm, setShowVendorForm] = useState(false);
   const [editingVendor, setEditingVendor] = useState(null);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -1684,7 +1684,7 @@ export default function HomeScreen() {
                 </View>
               </View>
             )}
-            {customers.filter(c=>c.name?.toLowerCase().includes(customerSearch.toLowerCase())||c.email?.toLowerCase().includes(customerSearch.toLowerCase())).map(c=>(
+            {customers.filter(c=>{const q=customerSearch.toLowerCase();return (c.company||'').toLowerCase().includes(q)||(c.contactName||c.name||'').toLowerCase().includes(q)||(c.email||'').toLowerCase().includes(q)||(c.cellPhone||'').includes(q)||(c.officePhone||'').includes(q);}).map(c=>(
               <View key={c.id} style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12,borderWidth:1,borderColor:t.border,flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start'}}>
                 <View style={{flex:1}}>
                   <Text style={{color:t.text,fontSize:16,fontWeight:'600'}}>{c.company||'Company'}</Text>
@@ -1713,15 +1713,21 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             <Text style={{color:t.sub,fontSize:13,marginBottom:16}}>{vendors.length} vendor{vendors.length!==1?'s':''}</Text>
-            <TouchableOpacity onPress={()=>{setVendorForm({name:'',email:'',phone:'',notes:'',dateAdded:new Date().toISOString().slice(0,10),lastContact:''});setEditingVendor(null);setShowVendorForm(true);}} style={{backgroundColor:t.chip,borderRadius:12,padding:14,alignItems:'center',marginBottom:16}}>
+            <TouchableOpacity onPress={()=>{setVendorForm({name:'',company:'',cellPhone:'',officePhone:'',email:'',phone:'',notes:'',dateAdded:new Date().toISOString().slice(0,10),lastContact:''});setEditingVendor(null);setShowVendorForm(true);}} style={{backgroundColor:t.chip,borderRadius:12,padding:14,alignItems:'center',marginBottom:16}}>
               <Text style={{color:t.accent,fontSize:15,fontWeight:'600'}}>+ Add Vendor</Text>
             </TouchableOpacity>
             <TextInput placeholder='Search Vendors' placeholderTextColor={t.sub} value={vendorSearch} onChangeText={setVendorSearch} style={{backgroundColor:t.card,borderRadius:8,paddingVertical:11,paddingHorizontal:12,color:t.text,fontSize:14,marginBottom:16,borderWidth:1,borderColor:t.chip}} />
             {showVendorForm&&(
               <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:16}}>
                 <Text style={{color:t.accent,fontSize:16,fontWeight:'600',marginBottom:12}}>{editingVendor?'Edit Vendor':'New Vendor'}</Text>
-                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>NAME *</Text>
-                <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:10,borderWidth:1,borderColor:t.chip}} value={vendorForm.name} onChangeText={v=>setVendorForm(f=>({...f,name:v}))} placeholder='Vendor Name' placeholderTextColor={t.sub} />
+                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>COMPANY</Text>
+                <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:10,borderWidth:1,borderColor:t.chip}} value={vendorForm.company||''} onChangeText={v=>setVendorForm(f=>({...f,company:v}))} placeholder='Acme Supply Co' placeholderTextColor={t.sub} />
+                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>CONTACT NAME *</Text>
+                <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:10,borderWidth:1,borderColor:t.chip}} value={vendorForm.name} onChangeText={v=>setVendorForm(f=>({...f,name:v}))} placeholder='John Smith' placeholderTextColor={t.sub} />
+                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>CELL PHONE</Text>
+                <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:10,borderWidth:1,borderColor:t.chip}} value={vendorForm.cellPhone||''} onChangeText={v=>{const d=v.replace(/\D/g,'').slice(0,10);let p=d;if(d.length>=7)p='('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6);else if(d.length>=4)p='('+d.slice(0,3)+') '+d.slice(3);setVendorForm(f=>({...f,cellPhone:p}));}} placeholder='(555) 000-0000' placeholderTextColor={t.sub} keyboardType='phone-pad' />
+                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>OFFICE PHONE</Text>
+                <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:10,borderWidth:1,borderColor:t.chip}} value={vendorForm.officePhone||''} onChangeText={v=>{const d=v.replace(/\D/g,'').slice(0,10);let p=d;if(d.length>=7)p='('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6);else if(d.length>=4)p='('+d.slice(0,3)+') '+d.slice(3);setVendorForm(f=>({...f,officePhone:p}));}} placeholder='(555) 000-0000' placeholderTextColor={t.sub} keyboardType='phone-pad' />
                 <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>EMAIL</Text>
                 <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:10,borderWidth:1,borderColor:t.chip}} value={vendorForm.email} onChangeText={v=>setVendorForm(f=>({...f,email:v}))} placeholder='vendor@example.com' placeholderTextColor={t.sub} keyboardType='email-address' />
                 <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>PHONE</Text>
@@ -1737,7 +1743,7 @@ export default function HomeScreen() {
                     <Text style={{color:t.accent,fontSize:14}}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={async()=>{
-                    if(!vendorForm.name.trim())return Alert.alert('Error','Name is required');
+                    if(!vendorForm.name.trim()&&!vendorForm.company.trim())return Alert.alert('Error','Company or contact name is required');
                     try{
                       if(editingVendor){
                         await fetch(API+'/orgs/'+org.id+'/contacts/'+editingVendor.id,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({...vendorForm,type:'vendor'})});
@@ -1753,21 +1759,18 @@ export default function HomeScreen() {
                 </View>
               </View>
             )}
-            {vendors.filter(v=>v.name?.toLowerCase().includes(vendorSearch.toLowerCase())||v.email?.toLowerCase().includes(vendorSearch.toLowerCase())).map(v=>(
-              <View key={v.id} style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12}}>
-                <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
-                  <Text style={{color:t.text,fontSize:16,fontWeight:'600'}}>{v.name}</Text>
-                  <View style={{flexDirection:'row',gap:18}}>
-                    <TouchableOpacity onPress={()=>{setVendorForm({name:v.name||'',email:v.email||'',phone:v.phone||''});setEditingVendor(v);setShowVendorForm(true);}}>
-                      <Text style={{color:t.sub,fontSize:13}}>Edit</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={()=>deleteVendor(v)}>
-                      <Text style={{color:t.danger,fontSize:13}}>Delete</Text>
-                    </TouchableOpacity>
-                  </View>
+            {vendors.filter(v=>{const q=vendorSearch.toLowerCase();return (v.company||'').toLowerCase().includes(q)||(v.name||'').toLowerCase().includes(q)||(v.email||'').toLowerCase().includes(q)||(v.cellPhone||'').includes(q)||(v.officePhone||'').includes(q)||(v.phone||'').includes(q);}).map(v=>(
+              <View key={v.id} style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12,borderWidth:1,borderColor:t.border,flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start'}}>
+                <View style={{flex:1}}>
+                  <Text style={{color:t.text,fontSize:16,fontWeight:'600'}}>{v.company||v.name||'Company'}</Text>
+                  {(v.company&&v.name)?<Text style={{color:t.sub,fontSize:14,marginTop:2}}>{v.name}</Text>:null}
+                  {v.cellPhone?<Text style={{color:t.sub,fontSize:12,marginTop:4}}>Cell: {v.cellPhone}</Text>:null}
+                  {v.officePhone?<Text style={{color:t.sub,fontSize:12,marginTop:2}}>Office: {v.officePhone}</Text>:null}
+                  {(!v.cellPhone&&!v.officePhone&&v.phone)?<Text style={{color:t.sub,fontSize:12,marginTop:4}}>{v.phone}</Text>:null}
                 </View>
-                {v.email?<Text style={{color:t.sub,fontSize:13,marginTop:4}}>{v.email}</Text>:null}
-                {v.phone?<Text style={{color:t.sub,fontSize:13,marginTop:2}}>{v.phone}</Text>:null}
+                <TouchableOpacity onPress={()=>{setSelectedVendor(v);setShowVendorDetail(true);}} style={{backgroundColor:t.accent,borderRadius:8,padding:12,alignItems:'center',marginLeft:12}}>
+                  <Text style={{color:t.bg,fontSize:15,fontWeight:'600'}}>Open</Text>
+                </TouchableOpacity>
               </View>
             ))}
             {vendors.length===0&&<Text style={{color:t.sub,textAlign:'center',marginTop:40}}>No vendors yet</Text>}
@@ -1824,6 +1827,63 @@ export default function HomeScreen() {
                   <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12}}>
                     <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>NOTES</Text>
                     <Text style={{color:t.text,fontSize:14}}>{selectedCustomer.notes}</Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </Modal>
+
+      {/* Vendor Detail Modal */}
+      <Modal visible={showVendorDetail} animationType="slide" presentationStyle="pageSheet">
+        <ScrollView style={{flex:1,backgroundColor:t.bg}}>
+          <View style={{padding:24,paddingTop:60}}>
+            <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
+              <TouchableOpacity onPress={()=>setShowVendorDetail(false)} style={{backgroundColor:t.card,borderRadius:8,paddingVertical:10,paddingHorizontal:16,borderWidth:1,borderColor:t.border}}>
+                <Text style={{color:t.accent,fontSize:15,fontWeight:'600'}}>← Close</Text>
+              </TouchableOpacity>
+              <View style={{flexDirection:'row',gap:12}}>
+                <TouchableOpacity onPress={()=>{if(selectedVendor){setVendorForm({name:selectedVendor.name||'',company:selectedVendor.company||'',cellPhone:selectedVendor.cellPhone||'',officePhone:selectedVendor.officePhone||'',email:selectedVendor.email||'',phone:selectedVendor.phone||'',notes:selectedVendor.notes||'',dateAdded:selectedVendor.dateAdded||''});setEditingVendor(selectedVendor);setShowVendorDetail(false);setShowVendorForm(true);}}} style={{backgroundColor:t.card,borderRadius:8,padding:8,paddingHorizontal:12}}>
+                  <Text style={{color:t.accent,fontSize:13}}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={()=>{if(selectedVendor){setShowVendorDetail(false);deleteVendor(selectedVendor);}}} style={{backgroundColor:'#4a1a1a',borderRadius:8,padding:8,paddingHorizontal:12}}>
+                  <Text style={{color:'#F0A9A0',fontSize:13}}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            {selectedVendor && (
+              <View>
+                <Text style={{color:t.text,fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedVendor.company||selectedVendor.name||'Company'}</Text>
+                {(selectedVendor.company&&selectedVendor.name)?<Text style={{color:t.sub,fontSize:14,marginBottom:16}}>{selectedVendor.name}</Text>:null}
+                {selectedVendor.cellPhone && (
+                  <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between'}}>
+                    <Text style={{color:t.sub,fontSize:13}}>Cell Phone</Text>
+                    <Text style={{color:t.text,fontSize:13}}>{selectedVendor.cellPhone}</Text>
+                  </View>
+                )}
+                {selectedVendor.officePhone && (
+                  <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between'}}>
+                    <Text style={{color:t.sub,fontSize:13}}>Office Phone</Text>
+                    <Text style={{color:t.text,fontSize:13}}>{selectedVendor.officePhone}</Text>
+                  </View>
+                )}
+                {selectedVendor.phone && (
+                  <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between'}}>
+                    <Text style={{color:t.sub,fontSize:13}}>Phone</Text>
+                    <Text style={{color:t.text,fontSize:13}}>{selectedVendor.phone}</Text>
+                  </View>
+                )}
+                {selectedVendor.email && (
+                  <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between'}}>
+                    <Text style={{color:t.sub,fontSize:13}}>Email</Text>
+                    <Text style={{color:t.text,fontSize:13}}>{selectedVendor.email}</Text>
+                  </View>
+                )}
+                {selectedVendor.notes && (
+                  <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12}}>
+                    <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>NOTES</Text>
+                    <Text style={{color:t.text,fontSize:14}}>{selectedVendor.notes}</Text>
                   </View>
                 )}
               </View>
