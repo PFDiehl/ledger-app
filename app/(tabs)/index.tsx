@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, TouchableOpacity, TextInput, Alert, ScrollView, Modal, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Alert, ScrollView, Modal, KeyboardAvoidingView, Platform, Image, Linking } from 'react-native';
 
 const API = 'https://ledger-accounting-production.up.railway.app/api';
 
@@ -112,6 +112,10 @@ export default function HomeScreen() {
   const [selectedBill, setSelectedBill] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showCustomerDetail, setShowCustomerDetail] = useState(false);
+  const [pendingCustomerNav, setPendingCustomerNav] = useState(null);
+  const [showCustomerDatePicker, setShowCustomerDatePicker] = useState(false);
+  const [custCalViewYear, setCustCalViewYear] = useState(new Date().getFullYear());
+  const [custCalViewMonth, setCustCalViewMonth] = useState(new Date().getMonth());
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [showVendorDetail, setShowVendorDetail] = useState(false);
   const [invoices, setInvoices] = useState([]);
@@ -515,7 +519,7 @@ export default function HomeScreen() {
         try {
           const r = await fetch(API+'/orgs/'+org.id+'/contacts/'+c.id, { method:'DELETE', headers:{'Authorization':'Bearer '+token} });
           const j = await r.json();
-          if (j.success) { loadCustomers(org.id, token); }
+          if (j.success) { setShowCustomerDetail(false); loadCustomers(org.id, token); }
           else Alert.alert('Could not delete', 'This customer may have invoices linked to them. Remove those invoices first, then try again.');
         } catch(e) { Alert.alert('Error', 'Cannot connect'); }
       }}
@@ -1626,7 +1630,10 @@ export default function HomeScreen() {
         </ScrollView>
       </Modal>
       {/* Customers Modal */}
-      <Modal visible={showCustomers} animationType="slide" presentationStyle="pageSheet">
+      <Modal visible={showCustomers} animationType="slide" presentationStyle="pageSheet" onDismiss={()=>{
+        if(pendingCustomerNav?.type==='view'){ setSelectedCustomer(pendingCustomerNav.cust); setShowCustomerDetail(true); }
+        setPendingCustomerNav(null);
+      }}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:t.bg}}>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
@@ -1636,10 +1643,12 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             <Text style={{color:t.sub,fontSize:13,marginBottom:16}}>{customers.length} customer{customers.length!==1?'s':''}</Text>
-            <TouchableOpacity onPress={()=>{setCustomerForm({name:'',email:'',phone:'',salesperson:'',notes:'',dateAdded:new Date().toISOString().slice(0,10),lastContact:''});setEditingCustomer(null);setShowCustomerForm(true);}} style={{backgroundColor:t.chip,borderRadius:12,padding:14,alignItems:'center',marginBottom:16}}>
-              <Text style={{color:t.accent,fontSize:15,fontWeight:'600'}}>+ Add Customer</Text>
-            </TouchableOpacity>
-            <TextInput placeholder='Search Customers' placeholderTextColor={t.sub} value={customerSearch} onChangeText={setCustomerSearch} style={{backgroundColor:t.card,borderRadius:8,paddingVertical:11,paddingHorizontal:12,color:t.text,fontSize:14,marginBottom:16,borderWidth:1,borderColor:t.chip}} />
+            <View style={{flexDirection:'row',alignItems:'center',gap:10,marginBottom:16}}>
+              <TouchableOpacity onPress={()=>{setCustomerForm({name:'',email:'',phone:'',salesperson:'',notes:'',dateAdded:new Date().toISOString().slice(0,10),lastContact:''});setEditingCustomer(null);setShowCustomerForm(true);}} style={{backgroundColor:t.chip,borderRadius:10,paddingVertical:12,paddingHorizontal:14,alignItems:'center'}}>
+                <Text style={{color:t.accent,fontSize:14,fontWeight:'600'}}>+ Add Customer</Text>
+              </TouchableOpacity>
+              <TextInput placeholder='Search Customers' placeholderTextColor={t.sub} value={customerSearch} onChangeText={setCustomerSearch} style={{flex:1,backgroundColor:t.card,borderRadius:8,paddingVertical:11,paddingHorizontal:12,color:t.text,fontSize:14,borderWidth:1,borderColor:t.chip}} />
+            </View>
             {showCustomerForm&&(
               <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:16}}>
                 <Text style={{color:t.accent,fontSize:16,fontWeight:'600',marginBottom:12}}>{editingCustomer?'Edit Customer':'New Customer'}</Text>
@@ -1653,14 +1662,56 @@ export default function HomeScreen() {
                 <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:10,borderWidth:1,borderColor:t.chip}} value={customerForm.officePhone||''} onChangeText={v=>{const d=v.replace(/\D/g,'').slice(0,10);let p=d;if(d.length>=7)p='('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6);else if(d.length>=4)p='('+d.slice(0,3)+') '+d.slice(3);setCustomerForm(f=>({...f,officePhone:p}));}} placeholder='(555) 000-0000' placeholderTextColor={t.sub} keyboardType='phone-pad' />
                 <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>EMAIL</Text>
                 <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:10,borderWidth:1,borderColor:t.chip}} value={customerForm.email} onChangeText={v=>setCustomerForm(f=>({...f,email:v}))} placeholder='billing@acme.com' placeholderTextColor={t.sub} keyboardType='email-address' />
-                <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>PHONE</Text>
-                <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:10,borderWidth:1,borderColor:t.chip}} value={customerForm.phone} onChangeText={v=>{const d=v.replace(/\D/g,'').slice(0,10);let p=d;if(d.length>=7)p='('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6);else if(d.length>=4)p='('+d.slice(0,3)+') '+d.slice(3);setCustomerForm(f=>({...f,phone:p}));}} placeholder='(555) 000-0000' placeholderTextColor={t.sub} keyboardType='phone-pad' />
                 <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>SALESPERSON</Text>
                 <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip}} value={customerForm.salesperson} onChangeText={v=>setCustomerForm(f=>({...f,salesperson:v}))} placeholder='Jane Smith' placeholderTextColor={t.sub} />
                 <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>DATE ADDED</Text>
-                <TouchableOpacity onPress={()=>{setShowCustomerDatePicker(true);}} style={{backgroundColor:t.bg,borderRadius:8,padding:12,marginBottom:16,borderWidth:1,borderColor:t.chip,flexDirection:'row',justifyContent:'space-between'}}>
+                <TouchableOpacity onPress={()=>{const base=customerForm.dateAdded?new Date(customerForm.dateAdded+'T12:00:00'):new Date();setCustCalViewYear(base.getFullYear());setCustCalViewMonth(base.getMonth());setShowCustomerDatePicker(true);}} style={{backgroundColor:t.bg,borderRadius:8,padding:12,marginBottom:16,borderWidth:1,borderColor:t.chip,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
                   <Text style={{color:customerForm.dateAdded?t.text:t.sub,fontSize:15}}>{customerForm.dateAdded ? new Date(customerForm.dateAdded+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Select date'}</Text>
+                  <Text style={{color:t.sub,fontSize:16}}>📅</Text>
                 </TouchableOpacity>
+                <Modal visible={showCustomerDatePicker} transparent animationType='fade'>
+                  <View style={{flex:1,backgroundColor:'rgba(0,0,0,0.6)',justifyContent:'center',alignItems:'center',padding:24}}>
+                    <View style={{backgroundColor:t.card,borderRadius:16,padding:20,width:'100%',maxWidth:340}}>
+                      {(()=>{
+                        const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+                        const dayNames=['Su','Mo','Tu','We','Th','Fr','Sa'];
+                        const firstDay=new Date(custCalViewYear,custCalViewMonth,1).getDay();
+                        const daysInMonth=new Date(custCalViewYear,custCalViewMonth+1,0).getDate();
+                        const cells=Array.from({length:firstDay+daysInMonth},(_,i)=>i<firstDay?null:i-firstDay+1);
+                        const isSelected=(d)=>d&&customerForm.dateAdded===`${custCalViewYear}-${String(custCalViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                        const isToday=(d)=>{const t2=new Date();return d&&t2.getFullYear()===custCalViewYear&&t2.getMonth()===custCalViewMonth&&t2.getDate()===d;};
+                        return(
+                          <View>
+                            <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+                              <TouchableOpacity onPress={()=>{if(custCalViewMonth===0){setCustCalViewMonth(11);setCustCalViewYear(y=>y-1);}else setCustCalViewMonth(m=>m-1);}} style={{padding:8}}>
+                                <Text style={{color:t.accent,fontSize:20}}>‹</Text>
+                              </TouchableOpacity>
+                              <Text style={{color:t.text,fontSize:16,fontWeight:'600'}}>{monthNames[custCalViewMonth]} {custCalViewYear}</Text>
+                              <TouchableOpacity onPress={()=>{if(custCalViewMonth===11){setCustCalViewMonth(0);setCustCalViewYear(y=>y+1);}else setCustCalViewMonth(m=>m+1);}} style={{padding:8}}>
+                                <Text style={{color:t.accent,fontSize:20}}>›</Text>
+                              </TouchableOpacity>
+                            </View>
+                            <View style={{flexDirection:'row',marginBottom:8}}>
+                              {dayNames.map(d=><View key={d} style={{flex:1,alignItems:'center'}}><Text style={{color:t.sub,fontSize:11,fontWeight:'600'}}>{d}</Text></View>)}
+                            </View>
+                            <View style={{flexDirection:'row',flexWrap:'wrap'}}>
+                              {cells.map((d,i)=>(
+                                <TouchableOpacity key={i} onPress={()=>{if(d){const ds=`${custCalViewYear}-${String(custCalViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;setCustomerForm(f=>({...f,dateAdded:ds}));setShowCustomerDatePicker(false);}}} style={{width:'14.28%',aspectRatio:1,alignItems:'center',justifyContent:'center',marginBottom:2}}>
+                                  {d?<View style={{width:32,height:32,borderRadius:16,backgroundColor:isSelected(d)?t.accent:'transparent',alignItems:'center',justifyContent:'center',borderWidth:isToday(d)&&!isSelected(d)?1:0,borderColor:t.accent}}>
+                                    <Text style={{color:isSelected(d)?t.bg:t.text,fontSize:14,fontWeight:isSelected(d)||isToday(d)?'700':'400'}}>{d}</Text>
+                                  </View>:null}
+                                </TouchableOpacity>
+                              ))}
+                            </View>
+                            <TouchableOpacity onPress={()=>setShowCustomerDatePicker(false)} style={{marginTop:16,padding:12,alignItems:'center',borderTopWidth:1,borderTopColor:t.chip}}>
+                              <Text style={{color:t.sub,fontSize:15}}>Cancel</Text>
+                            </TouchableOpacity>
+                          </View>
+                        );
+                      })()}
+                    </View>
+                  </View>
+                </Modal>
                 <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>NOTES</Text>
                 <TextInput style={{backgroundColor:t.bg,borderRadius:8,padding:12,color:t.text,fontSize:15,marginBottom:16,borderWidth:1,borderColor:t.chip,minHeight:80}} value={customerForm.notes} onChangeText={v=>setCustomerForm(f=>({...f,notes:v}))} placeholder='Notes about this customer' placeholderTextColor={t.sub} multiline />
 <View style={{flexDirection:'row',gap:10}}>
@@ -1687,12 +1738,12 @@ export default function HomeScreen() {
             {customers.filter(c=>{const q=customerSearch.toLowerCase();return (c.company||'').toLowerCase().includes(q)||(c.contactName||c.name||'').toLowerCase().includes(q)||(c.email||'').toLowerCase().includes(q)||(c.cellPhone||'').includes(q)||(c.officePhone||'').includes(q);}).map(c=>(
               <View key={c.id} style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12,borderWidth:1,borderColor:t.border,flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start'}}>
                 <View style={{flex:1}}>
-                  <Text style={{color:t.text,fontSize:16,fontWeight:'600'}}>{c.company||'Company'}</Text>
-                  <Text style={{color:t.sub,fontSize:14,marginTop:2}}>{c.contactName||c.name||'Contact'}</Text>
-                  {c.cellPhone?<Text style={{color:t.sub,fontSize:12,marginTop:4}}>Cell: {c.cellPhone}</Text>:null}
-                  {c.officePhone?<Text style={{color:t.sub,fontSize:12,marginTop:2}}>Office: {c.officePhone}</Text>:null}
+                  <Text style={{color:t.text,fontSize:18,fontWeight:'700'}}>{c.company||c.contactName||c.name||'Customer'}</Text>
+                  {c.company&&(c.contactName||c.name)?<Text style={{color:t.sub,fontSize:15,marginTop:2}}>{c.contactName||c.name}</Text>:null}
+                  {c.cellPhone?<TouchableOpacity onPress={()=>Linking.openURL('tel:'+String(c.cellPhone).replace(/\D/g,''))}><Text style={{color:t.accent,fontSize:15,fontWeight:'500',marginTop:6}}>📱 {c.cellPhone}</Text></TouchableOpacity>:null}
+                  {c.officePhone?<TouchableOpacity onPress={()=>Linking.openURL('tel:'+String(c.officePhone).replace(/\D/g,''))}><Text style={{color:t.accent,fontSize:15,fontWeight:'500',marginTop:4}}>📞 {c.officePhone}</Text></TouchableOpacity>:null}
                 </View>
-                <TouchableOpacity onPress={()=>{setSelectedCustomer(c);setShowCustomerDetail(true);}} style={{backgroundColor:t.accent,borderRadius:8,padding:12,alignItems:'center',marginLeft:12}}>
+                <TouchableOpacity onPress={()=>{setPendingCustomerNav({type:'view',cust:c});setShowCustomers(false);}} style={{backgroundColor:t.accent,borderRadius:8,padding:12,alignItems:'center',marginLeft:12}}>
                   <Text style={{color:t.bg,fontSize:15,fontWeight:'600'}}>Open</Text>
                 </TouchableOpacity>
               </View>
@@ -1779,7 +1830,10 @@ export default function HomeScreen() {
       </Modal>
 
       {/* Customer Detail Modal */}
-      <Modal visible={showCustomerDetail} animationType="slide" presentationStyle="pageSheet">
+      <Modal visible={showCustomerDetail} animationType="slide" presentationStyle="pageSheet" onDismiss={()=>{
+        if(pendingCustomerNav?.type==='edit' && pendingCustomerNav.cust){ const c=pendingCustomerNav.cust; setCustomerForm({name:c.name||'',company:c.company||'',contactName:c.contactName||'',email:c.email||'',phone:c.phone||'',cellPhone:c.cellPhone||'',officePhone:c.officePhone||'',salesperson:c.salesperson||'',notes:c.notes||'',dateAdded:c.dateAdded?String(c.dateAdded).slice(0,10):''}); setEditingCustomer(c); setShowCustomers(true); setShowCustomerForm(true); }
+        setPendingCustomerNav(null);
+      }}>
         <ScrollView style={{flex:1,backgroundColor:t.bg}}>
           <View style={{padding:24,paddingTop:60}}>
             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
@@ -1787,7 +1841,7 @@ export default function HomeScreen() {
                 <Text style={{color:t.accent,fontSize:15,fontWeight:'600'}}>← Close</Text>
               </TouchableOpacity>
               <View style={{flexDirection:'row',gap:12}}>
-                <TouchableOpacity onPress={()=>{if(selectedCustomer){setCustomerForm({name:selectedCustomer.name||'',company:selectedCustomer.company||'',contactName:selectedCustomer.contactName||'',email:selectedCustomer.email||'',phone:selectedCustomer.phone||'',cellPhone:selectedCustomer.cellPhone||'',officePhone:selectedCustomer.officePhone||'',salesperson:selectedCustomer.salesperson||'',notes:selectedCustomer.notes||'',dateAdded:selectedCustomer.dateAdded||''});setEditingCustomer(selectedCustomer);setShowCustomerForm(true);}}} style={{backgroundColor:t.card,borderRadius:8,padding:8,paddingHorizontal:12}}>
+                <TouchableOpacity onPress={()=>{if(selectedCustomer){setPendingCustomerNav({type:'edit',cust:selectedCustomer});setShowCustomerDetail(false);}}} style={{backgroundColor:t.card,borderRadius:8,padding:8,paddingHorizontal:12}}>
                   <Text style={{color:t.accent,fontSize:13}}>Edit</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={()=>{if(selectedCustomer){deleteCustomer(selectedCustomer);}}} style={{backgroundColor:'#4a1a1a',borderRadius:8,padding:8,paddingHorizontal:12}}>
@@ -1797,18 +1851,18 @@ export default function HomeScreen() {
             </View>
             {selectedCustomer && (
               <View>
-                <Text style={{color:t.text,fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedCustomer.company||'Company'}</Text>
-                <Text style={{color:t.sub,fontSize:14,marginBottom:16}}>{selectedCustomer.contactName||selectedCustomer.name||'Contact'}</Text>
+                <Text style={{color:t.text,fontSize:24,fontWeight:'700',marginBottom:4}}>{selectedCustomer.company||selectedCustomer.contactName||selectedCustomer.name||'Customer'}</Text>
+                {selectedCustomer.company&&(selectedCustomer.contactName||selectedCustomer.name)?<Text style={{color:t.sub,fontSize:14,marginBottom:16}}>{selectedCustomer.contactName||selectedCustomer.name}</Text>:null}
                 {selectedCustomer.cellPhone && (
                   <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between'}}>
-                    <Text style={{color:t.sub,fontSize:13}}>Cell Phone</Text>
-                    <Text style={{color:t.text,fontSize:13}}>{selectedCustomer.cellPhone}</Text>
+                    <Text style={{color:t.sub,fontSize:14}}>📱 Cell</Text>
+                    <TouchableOpacity onPress={()=>Linking.openURL('tel:'+String(selectedCustomer.cellPhone).replace(/\D/g,''))}><Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>{selectedCustomer.cellPhone}</Text></TouchableOpacity>
                   </View>
                 )}
                 {selectedCustomer.officePhone && (
                   <View style={{backgroundColor:t.card,borderRadius:12,padding:16,marginBottom:12,flexDirection:'row',justifyContent:'space-between'}}>
-                    <Text style={{color:t.sub,fontSize:13}}>Office Phone</Text>
-                    <Text style={{color:t.text,fontSize:13}}>{selectedCustomer.officePhone}</Text>
+                    <Text style={{color:t.sub,fontSize:14}}>📞 Office</Text>
+                    <TouchableOpacity onPress={()=>Linking.openURL('tel:'+String(selectedCustomer.officePhone).replace(/\D/g,''))}><Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>{selectedCustomer.officePhone}</Text></TouchableOpacity>
                   </View>
                 )}
                 {selectedCustomer.email && (
