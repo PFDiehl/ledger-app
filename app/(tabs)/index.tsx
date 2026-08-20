@@ -142,21 +142,126 @@ export default function HomeScreen() {
   const [editingExpense, setEditingExpense] = useState(false);
   const [editingBill, setEditingBill] = useState(false);
 
+  // ---- Session persistence & token refresh ----
+  const [restoring, setRestoring] = useState(true);
+
+  async function saveSession(accessToken, refreshToken) {
+    try {
+      if (accessToken)  await AsyncStorage.setItem('accessToken', accessToken);
+      if (refreshToken) await AsyncStorage.setItem('refreshToken', refreshToken);
+    } catch(e) {}
+  }
+
+  async function clearSession() {
+    try {
+      await AsyncStorage.removeItem('accessToken');
+      await AsyncStorage.removeItem('refreshToken');
+    } catch(e) {}
+    setToken(null); setOrg(null); setUser(null);
+  }
+
+  // Exchange the stored refresh token for a fresh access token.
+  // Returns the new access token, or null if the session can't be refreshed.
+  async function refreshAccessToken() {
+    try {
+      const rt = await AsyncStorage.getItem('refreshToken');
+      if (!rt) return null;
+      const r = await fetch(API+'/auth/refresh', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ refreshToken: rt }),
+      });
+      if (!r.ok) return null;
+      const j = await r.json();
+      const d = j.data || j;
+      if (!d.accessToken) return null;
+      await saveSession(d.accessToken, d.refreshToken || rt);
+      setToken(d.accessToken);
+      return d.accessToken;
+    } catch(e) { return null; }
+  }
+
+  function loadAll(orgId, tok) {
+    loadInvoices(orgId, tok);
+    loadExpenses(orgId, tok);
+    loadBills(orgId, tok);
+    loadCustomers(orgId, tok);
+    loadVendors(orgId, tok);
+  }
+
+  // On app launch, try to restore a saved session so field users stay logged in.
+  useEffect(() => {
+    (async () => {
+      try {
+        const tok = await refreshAccessToken();
+        if (!tok) return;
+        const r = await fetch(API+'/auth/me', { headers:{ Authorization:'Bearer '+tok } });
+        const j = await r.json();
+        const d = j.data || j;
+        if (d.user) {
+          const activeOrg = d.orgs?.[0] || d.org;
+          setUser(d.user); setOrg(activeOrg);
+          loadAll(activeOrg?.id, tok);
+        }
+      } catch(e) {
+      } finally { setRestoring(false); }
+    })();
+  }, []);
+
+  // Two-factor login state
+  const [twoFactorToken, setTwoFactorToken] = useState(null);
+  const [twoFactorCode, setTwoFactorCode]   = useState('');
+  const [verifying, setVerifying]           = useState(false);
+  const [twoFactorError, setTwoFactorError] = useState('');
+
+  // Complete login after a successful auth response (shared by login + verify2FA).
+  async function finishLogin(d) {
+    const activeOrg = d.orgs?.[0] || d.org;
+    setUser(d.user); setOrg(activeOrg); setToken(d.accessToken);
+    await saveSession(d.accessToken, d.refreshToken);
+    loadAll(activeOrg?.id, d.accessToken);
+  }
+
   async function login() {
     try {
       const r = await fetch(API+'/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email,password}) });
       const j = await r.json();
       const d = j.data || j;
+      if (d.twoFactorRequired) {
+        // Account has 2FA — switch to the code-entry screen.
+        setTwoFactorToken(d.twoFactorToken);
+        setTwoFactorCode('');
+        setTwoFactorError('');
+        return;
+      }
       if (d.user) {
-        const activeOrg = d.orgs?.[0] || d.org;
-        setUser(d.user); setOrg(activeOrg); setToken(d.accessToken);
-        loadInvoices(activeOrg?.id, d.accessToken);
-        loadExpenses(activeOrg?.id, d.accessToken);
-        loadBills(activeOrg?.id, d.accessToken);
-        loadCustomers(activeOrg?.id, d.accessToken);
-        loadVendors(activeOrg?.id, d.accessToken);
+        await finishLogin(d);
       } else Alert.alert('Error', 'Invalid credentials');
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
+  }
+
+  async function verify2FA() {
+    const code = twoFactorCode.replace(/\s/g, '');
+    if (!code) { setTwoFactorError('Enter your 6-digit code.'); return; }
+    setVerifying(true); setTwoFactorError('');
+    try {
+      const r = await fetch(API+'/auth/2fa/verify', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ twoFactorToken, code }),
+      });
+      const j = await r.json();
+      const d = j.data || j;
+      if (d.user && d.accessToken) {
+        await finishLogin(d);
+        setTwoFactorToken(null); setTwoFactorCode('');
+      } else {
+        setTwoFactorError(j.message || 'That code is incorrect. Try again.');
+      }
+    } catch(e) { setTwoFactorError('Cannot connect. Please try again.'); }
+    finally { setVerifying(false); }
+  }
+
+  function cancelTwoFactor() {
+    setTwoFactorToken(null); setTwoFactorCode(''); setTwoFactorError(''); setPassword('');
   }
 
   async function register() {
@@ -168,19 +273,26 @@ export default function HomeScreen() {
       if (d.user) {
         const newOrg = d.orgs?.[0] || d.org;
         setUser(d.user); setOrg(newOrg); setToken(d.accessToken);
+        await saveSession(d.accessToken, d.refreshToken);
         setShowRegister(false);
-        loadInvoices(newOrg?.id, d.accessToken);
-        loadExpenses(newOrg?.id, d.accessToken);
-        loadBills(newOrg?.id, d.accessToken);
-        loadCustomers(newOrg?.id, d.accessToken);
-        loadVendors(newOrg?.id, d.accessToken);
+        loadAll(newOrg?.id, d.accessToken);
       } else Alert.alert('Error', j.message || 'Registration failed');
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
   }
 
+  // GET helper that transparently refreshes the access token once on a 401.
+  async function authedGet(path, tok) {
+    let r = await fetch(API+path, { headers:{ Authorization:'Bearer '+tok } });
+    if (r.status === 401) {
+      const fresh = await refreshAccessToken();
+      if (fresh) r = await fetch(API+path, { headers:{ Authorization:'Bearer '+fresh } });
+    }
+    return r;
+  }
+
   async function loadInvoices(orgId, tok) {
     try {
-      const r = await fetch(API+'/orgs/'+orgId+'/invoices', { headers:{'Authorization':'Bearer '+tok} });
+      const r = await authedGet('/orgs/'+orgId+'/invoices', tok);
       const j = await r.json();
       if (j.success) setInvoices(j.data);
     } catch(e) {}
@@ -188,7 +300,7 @@ export default function HomeScreen() {
 
   async function loadExpenses(orgId, tok) {
     try {
-      const r = await fetch(API+'/orgs/'+orgId+'/expenses', { headers:{'Authorization':'Bearer '+tok} });
+      const r = await authedGet('/orgs/'+orgId+'/expenses', tok);
       const j = await r.json();
       if (j.success) setExpenses(j.data);
     } catch(e) {}
@@ -196,19 +308,19 @@ export default function HomeScreen() {
 
   async function loadCustomers(orgId, tok) {
     try {
-      const r = await fetch(API+'/orgs/'+orgId+'/contacts?type=customer', { headers:{ Authorization:'Bearer '+tok } });
+      const r = await authedGet('/orgs/'+orgId+'/contacts?type=customer', tok);
       const j = await r.json(); setCustomers(j.data||[]);
     } catch(e) {}
   }
   async function loadVendors(orgId, tok) {
     try {
-      const r = await fetch(API+'/orgs/'+orgId+'/contacts?type=vendor', { headers:{ Authorization:'Bearer '+tok } });
+      const r = await authedGet('/orgs/'+orgId+'/contacts?type=vendor', tok);
       const j = await r.json(); setVendors(j.data||[]);
     } catch(e) {}
   }
   async function loadBills(orgId, tok) {
     try {
-      const r = await fetch(API+'/orgs/'+orgId+'/bills', { headers:{'Authorization':'Bearer '+tok} });
+      const r = await authedGet('/orgs/'+orgId+'/bills', tok);
       const j = await r.json();
       if (j.success) setBills(j.data);
     } catch(e) {}
@@ -501,7 +613,7 @@ export default function HomeScreen() {
                   AsyncStorage.removeItem('recurringRules').catch(()=>{});
                   setRecurringRules([]);
                   setInvoices([]); setExpenses([]); setBills([]); setCustomers([]); setVendors([]);
-                  setToken(null); setOrg(null); setUser(null);
+                  await clearSession();
                   Alert.alert('Account deleted', 'Your account and all data have been permanently removed.');
                 } else Alert.alert('Could not delete', j.message || 'Please check your password and try again.');
               } catch(e) { Alert.alert('Error', 'Cannot connect. Please try again.'); }
@@ -567,6 +679,45 @@ export default function HomeScreen() {
   }
 
   function fmt(n) { return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2}); }
+
+  // While we try to restore a saved session on launch, show a brief splash
+  // instead of flashing the login screen.
+  if (!user && restoring) {
+    return (
+      <View style={{flex:1,backgroundColor:t.card,alignItems:'center',justifyContent:'center'}}>
+        <Text style={{fontSize:28,fontWeight:'700',color:t.accent}}>Mountain Top</Text>
+        <Text style={{fontSize:28,fontWeight:'700',color:t.accent,marginBottom:8}}>Ledger</Text>
+        <Text style={{fontSize:13,color:t.sub}}>Signing you in…</Text>
+      </View>
+    );
+  }
+
+  // Two-factor code entry (shown after a password login on a 2FA account).
+  if (!user && twoFactorToken) {
+    return (
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:t.card}}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{flexGrow:1,alignItems:'center',justifyContent:'center',padding:24}}>
+          <Text style={{fontSize:32,fontWeight:'700',color:t.accent,marginBottom:2}}>Mountain Top</Text>
+          <Text style={{fontSize:32,fontWeight:'700',color:t.accent,marginBottom:8}}>Ledger</Text>
+          <Text style={{fontSize:18,fontWeight:'600',color:t.text,marginTop:24,marginBottom:8}}>Two-factor authentication</Text>
+          <Text style={{fontSize:14,color:t.sub,marginBottom:28,textAlign:'center'}}>Enter the 6-digit code from your authenticator app. You can also use one of your backup codes.</Text>
+          {twoFactorError ? <Text style={{color:t.danger,fontSize:14,marginBottom:14,textAlign:'center'}}>{twoFactorError}</Text> : null}
+          <TextInput
+            style={{width:'100%',backgroundColor:t.chip,borderRadius:12,padding:16,color:t.text,fontSize:24,letterSpacing:8,textAlign:'center',marginBottom:20}}
+            placeholder="123456" placeholderTextColor={t.sub}
+            value={twoFactorCode} onChangeText={v=>{ setTwoFactorCode(v); setTwoFactorError(''); }}
+            keyboardType="number-pad" autoFocus maxLength={12}
+          />
+          <TouchableOpacity onPress={verify2FA} disabled={verifying} style={{width:'100%',backgroundColor:t.accent,borderRadius:12,padding:16,alignItems:'center',opacity:verifying?0.6:1}}>
+            <Text style={{color:t.bg,fontSize:16,fontWeight:'700'}}>{verifying ? 'Verifying…' : 'Verify'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={cancelTwoFactor} style={{marginTop:20,padding:8}}>
+            <Text style={{color:t.sub,fontSize:14}}>← Back to sign in</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   if (!user) {
     return (
@@ -638,7 +789,7 @@ export default function HomeScreen() {
           <Text style={{color:t.sub,fontSize:14}}>Welcome back,</Text>
           <Text style={{color:t.text,fontSize:22,fontWeight:'700'}}>{user.fullName}</Text>
         </View>
-        <TouchableOpacity onPress={()=>setUser(null)} style={{backgroundColor:t.chip,borderRadius:8,padding:8,paddingHorizontal:12}}>
+        <TouchableOpacity onPress={()=>{ clearSession(); }} style={{backgroundColor:t.chip,borderRadius:8,padding:8,paddingHorizontal:12}}>
           <Text style={{color:t.accent,fontSize:13}}>Sign out</Text>
         </TouchableOpacity>
       </View>
