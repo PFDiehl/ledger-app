@@ -42,7 +42,7 @@ function advanceDate(dateStr, freq) {
 }
 const BILL_CATEGORIES = ['Rent & Lease','Utilities','Insurance','Loan Payment','Supplier Invoice','Equipment Lease','Professional Services','Payroll','Taxes','Software & Subscriptions','Other'];
 
-// App color themes. O = Original forest green (default), B = Evergreen (light), C = Slate (premium dark).
+// App color themes. B = Evergreen (light, default), O = Original forest green, C = Slate (premium dark).
 const THEMES = {
   O: { key:'O', name:'Original',  bg:'#1c2e1c', card:'#2d4a35', border:'rgba(255,255,255,0.06)', text:'#FFFFFF', sub:'#7a9a7a', accent:'#a8d4a8', gold:'#FFD166', chip:'#3d5a45', danger:'#d4a8a8', input:'#1c2e1c' },
   B: { key:'B', name:'Evergreen', bg:'#F4F1E9', card:'#FFFFFF', border:'rgba(0,0,0,0.08)',       text:'#18271C', sub:'#6B7A6B', accent:'#2D7A4A', gold:'#B9852B', chip:'#EAE6DA', danger:'#B4472D', input:'#F0EEE6' },
@@ -69,8 +69,8 @@ export default function HomeScreen() {
   const [pendingInvoiceNav, setPendingInvoiceNav] = useState(null);
   const [pendingExpenseNav, setPendingExpenseNav] = useState(null);
   const [pendingBillNav, setPendingBillNav] = useState(null);
-  const [themeKey, setThemeKey] = useState('O');
-  const t = THEMES[themeKey] || THEMES.O;
+  const [themeKey, setThemeKey] = useState('B');
+  const t = THEMES[themeKey] || THEMES.B;
   useEffect(() => { AsyncStorage.getItem('themeKey').then(v => { if (v && THEMES[v]) setThemeKey(v); }).catch(()=>{}); }, []);
   useEffect(() => { AsyncStorage.getItem('recurringRules').then(v => { if (v) { try { setRecurringRules(JSON.parse(v)||[]); } catch(e){} } }).catch(()=>{}); }, []);
   useEffect(() => {
