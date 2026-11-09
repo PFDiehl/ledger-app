@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, TouchableOpacity, TextInput, Alert, ScrollView, Modal, KeyboardAvoidingView, Platform, Image, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Alert, ScrollView, Modal, KeyboardAvoidingView, Platform, Image, Linking, Dimensions } from 'react-native';
 
 const API = 'https://ledger-accounting-production.up.railway.app/api';
 
@@ -49,7 +49,14 @@ const THEMES = {
   O: { key:'O', name:'Original',  bg:'#1c2e1c', card:'#2d4a35', border:'rgba(255,255,255,0.06)', text:'#FFFFFF', sub:'#7a9a7a', accent:'#a8d4a8', gold:'#FFD166', chip:'#3d5a45', danger:'#d4a8a8', input:'#1c2e1c' },
   B: { key:'B', name:'Evergreen', bg:'#F4F1E9', card:'#FFFFFF', border:'rgba(0,0,0,0.08)',       text:'#18271C', sub:'#6B7A6B', accent:'#2D7A4A', gold:'#B9852B', chip:'#EAE6DA', danger:'#B4472D', input:'#F0EEE6' },
   C: { key:'C', name:'Slate',     bg:'#16181D', card:'#21252C', border:'rgba(255,255,255,0.07)', text:'#FFFFFF', sub:'#9AA3AE', accent:'#5FCF9A', gold:'#E8B94A', chip:'#2A2F38', danger:'#E5928A', input:'#16181D' },
+  T: { key:'T', name:'Teal',      bg:'#EFF7F7', card:'#FFFFFF', border:'rgba(0,0,0,0.08)',       text:'#0F3A3E', sub:'#5F8489', accent:'#0E7C86', gold:'#B9852B', chip:'#E4F3F4', danger:'#C0703A', input:'#E4F3F4' },
+  M: { key:'M', name:'Midnight',  bg:'#0C2A44', card:'#123A5C', border:'rgba(255,255,255,0.10)', text:'#FFFFFF', sub:'#9DB4CC', accent:'#F2C14E', gold:'#F2C14E', chip:'#163A5C', danger:'#E5928A', input:'#0F3352' },
+  R: { key:'R', name:'Harbor',    bg:'#EEF3F8', card:'#FFFFFF', border:'rgba(0,0,0,0.08)',       text:'#0C2A44', sub:'#5F7183', accent:'#2A6FB0', gold:'#C08A2E', chip:'#E7F1F9', danger:'#C0703A', input:'#E7F1F9' },
 };
+
+// Order shown in the theme carousel; CARD_W drives snap spacing.
+const THEME_ORDER = ['H','T','M','R','O','B','C'];
+const ROW_H = 46;            // height of one theme row (the dial shows exactly one)
 
 export default function HomeScreen() {
   const [email, setEmail] = useState('');
@@ -72,8 +79,9 @@ export default function HomeScreen() {
   const [pendingExpenseNav, setPendingExpenseNav] = useState(null);
   const [pendingBillNav, setPendingBillNav] = useState(null);
   const [themeKey, setThemeKey] = useState('H');
+  const themeScrollRef = useRef(null);
   const t = THEMES[themeKey] || THEMES.H;
-  useEffect(() => { AsyncStorage.getItem('themeKey').then(v => { if (v && THEMES[v]) setThemeKey(v); }).catch(()=>{}); }, []);
+  useEffect(() => { AsyncStorage.getItem('themeKey').then(v => { if (v && THEMES[v]) { setThemeKey(v); requestAnimationFrame(()=>{ const i=THEME_ORDER.indexOf(v); if(i>=0) themeScrollRef.current?.scrollTo({y:i*ROW_H,animated:false}); }); } }).catch(()=>{}); }, []);
   useEffect(() => { AsyncStorage.getItem('recurringRules').then(v => { if (v) { try { setRecurringRules(JSON.parse(v)||[]); } catch(e){} } }).catch(()=>{}); }, []);
   useEffect(() => {
     if (!org || !token || recurringChecked.current || !recurringRules.length) return;
@@ -221,6 +229,24 @@ export default function HomeScreen() {
     setUser(d.user); setOrg(activeOrg); setToken(d.accessToken);
     await saveSession(d.accessToken, d.refreshToken);
     loadAll(activeOrg?.id, d.accessToken);
+  }
+
+  // One-tap demo: sign into a sample company with no account (App Store 5.1.1(v)).
+  const [demoBusy, setDemoBusy] = useState(false);
+  async function loginDemo() {
+    if (demoBusy) return;
+    setDemoBusy(true);
+    try {
+      const r = await fetch(API+'/auth/demo', { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+      const j = await r.json();
+      const d = j.data || j;
+      if (d.user && d.accessToken) {
+        await finishLogin(d);
+      } else {
+        Alert.alert('Demo unavailable', j.message || 'The demo is temporarily unavailable. Please try again.');
+      }
+    } catch(e) { Alert.alert('Error', 'Cannot connect'); }
+    finally { setDemoBusy(false); }
   }
 
   async function login() {
@@ -741,6 +767,16 @@ export default function HomeScreen() {
           <TouchableOpacity style={{marginTop:16}} onPress={()=>setShowRegister(true)}>
             <Text style={{color:t.sub,fontSize:14,textAlign:'center'}}>Don't have an account? <Text style={{color:t.accent}}>Register</Text></Text>
           </TouchableOpacity>
+
+          <View style={{flexDirection:'row',alignItems:'center',width:'100%',marginTop:26,marginBottom:18}}>
+            <View style={{flex:1,height:1,backgroundColor:t.chip}} />
+            <Text style={{color:t.sub,fontSize:12,marginHorizontal:12}}>or</Text>
+            <View style={{flex:1,height:1,backgroundColor:t.chip}} />
+          </View>
+          <TouchableOpacity style={{width:'100%',borderWidth:1.5,borderColor:t.accent,borderRadius:12,padding:15,alignItems:'center',opacity:demoBusy?0.6:1}} onPress={loginDemo} disabled={demoBusy}>
+            <Text style={{fontSize:15,fontWeight:'600',color:t.accent}}>{demoBusy ? 'Loading demo…' : 'Explore the demo'}</Text>
+          </TouchableOpacity>
+          <Text style={{color:t.sub,fontSize:12,textAlign:'center',marginTop:8}}>See how it works with sample data — no account needed.</Text>
         </ScrollView>
         <Modal visible={showRegister} animationType="slide" presentationStyle="pageSheet">
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1,backgroundColor:t.card}}>
@@ -814,19 +850,37 @@ export default function HomeScreen() {
           <Text style={{color:t.accent,fontSize:16,fontWeight:'600'}}>{item.label}</Text>
         </TouchableOpacity>
       ))}
-      <View style={{paddingHorizontal:24,marginTop:14,marginBottom:30}}>
-        <Text style={{color:t.sub,fontSize:11,fontWeight:'700',letterSpacing:1,marginBottom:10}}>THEME</Text>
-        <View style={{flexDirection:'row',gap:10}}>
-          {Object.values(THEMES).map(th=>(
-            <TouchableOpacity key={th.key} onPress={()=>{setThemeKey(th.key); AsyncStorage.setItem('themeKey', th.key).catch(()=>{});}} style={{flex:1,backgroundColor:th.card,borderRadius:12,borderWidth:themeKey===th.key?2:1,borderColor:themeKey===th.key?th.accent:t.border,padding:12,alignItems:'center'}}>
-              <View style={{flexDirection:'row',gap:4,marginBottom:8}}>
-                <View style={{width:14,height:14,borderRadius:7,backgroundColor:th.bg,borderWidth:1,borderColor:'rgba(128,128,128,0.3)'}}/>
-                <View style={{width:14,height:14,borderRadius:7,backgroundColor:th.accent}}/>
-                <View style={{width:14,height:14,borderRadius:7,backgroundColor:th.gold}}/>
-              </View>
-              <Text style={{color:th.text,fontSize:12,fontWeight:'600'}}>{th.name}</Text>
-            </TouchableOpacity>
-          ))}
+      <View style={{marginTop:34,marginBottom:30,paddingHorizontal:24,alignItems:'center'}}>
+        <Text style={{color:t.sub,fontSize:11,fontWeight:'700',letterSpacing:1,marginBottom:8,textAlign:'center'}}>THEME SELECT</Text>
+        <View style={{width:230,height:ROW_H,borderWidth:1,borderColor:t.border,borderRadius:12,backgroundColor:t.card,overflow:'hidden'}}>
+          <ScrollView
+            ref={themeScrollRef}
+            nestedScrollEnabled
+            showsVerticalScrollIndicator={false}
+            snapToInterval={ROW_H}
+            decelerationRate="fast"
+            scrollEventThrottle={16}
+            onScroll={e=>{
+              const y=e.nativeEvent.contentOffset.y;
+              const i=Math.max(0,Math.min(THEME_ORDER.length-1,Math.round(y/ROW_H)));
+              const key=THEME_ORDER[i];
+              if(key && key!==themeKey){ setThemeKey(key); AsyncStorage.setItem('themeKey',key).catch(()=>{}); }
+            }}
+          >
+            {THEME_ORDER.map(key=>{
+              const th=THEMES[key];
+              return (
+                <View key={key} style={{height:ROW_H,flexDirection:'row',alignItems:'center',gap:10,paddingHorizontal:14}}>
+                  <View style={{flexDirection:'row',gap:3}}>
+                    <View style={{width:12,height:12,borderRadius:6,backgroundColor:th.bg,borderWidth:1,borderColor:'rgba(128,128,128,0.3)'}}/>
+                    <View style={{width:12,height:12,borderRadius:6,backgroundColor:th.accent}}/>
+                    <View style={{width:12,height:12,borderRadius:6,backgroundColor:th.gold}}/>
+                  </View>
+                  <Text style={{color:t.text,fontSize:15,fontWeight:'700'}}>{th.name}</Text>
+                </View>
+              );
+            })}
+          </ScrollView>
         </View>
       </View>
 
