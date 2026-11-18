@@ -66,6 +66,12 @@ export default function HomeScreen() {
   const [user, setUser] = useState(null);
   const [org, setOrg] = useState(null);
   const [token, setToken] = useState(null);
+  // Every company this login can open (a bookkeeper may have many); `org` is the one
+  // that is open now. activeOrgRef mirrors org.id so that a slow reply for a company
+  // the user has already switched away from can be recognised and thrown away.
+  const [orgs, setOrgs] = useState<any[]>([]);
+  const [showOrgPicker, setShowOrgPicker] = useState(false);
+  const activeOrgRef = useRef<string|null>(null);
   const [showInvoice, setShowInvoice] = useState(false);
   const [showExpense, setShowExpense] = useState(false);
   const [showBill, setShowBill] = useState(false);
@@ -83,9 +89,11 @@ export default function HomeScreen() {
   const t = THEMES[themeKey] || THEMES.H;
   useEffect(() => { AsyncStorage.getItem('themeKey').then(v => { if (v && THEMES[v]) { setThemeKey(v); requestAnimationFrame(()=>{ const i=THEME_ORDER.indexOf(v); if(i>=0) themeScrollRef.current?.scrollTo({y:i*ROW_H,animated:false}); }); } }).catch(()=>{}); }, []);
   useEffect(() => { AsyncStorage.getItem('recurringRules').then(v => { if (v) { try { setRecurringRules(JSON.parse(v)||[]); } catch(e){} } }).catch(()=>{}); }, []);
+  // Ask about repeating items that are due once per company per session (so again
+  // after switching to another company).
   useEffect(() => {
-    if (!org || !token || recurringChecked.current || !recurringRules.length) return;
-    recurringChecked.current = true;
+    if (!org || !token || recurringChecked.current === org.id || !recurringRules.length) return;
+    recurringChecked.current = org.id;
     setTimeout(() => { checkRecurringDue(); }, 900);
   }, [org, token, recurringRules]);
   const [showRegister, setShowRegister] = useState(false);
@@ -137,6 +145,13 @@ export default function HomeScreen() {
   const [showInvoiceRepeatPicker, setShowInvoiceRepeatPicker] = useState(false);
   const [showBillRepeatPicker, setShowBillRepeatPicker] = useState(false);
   const recurringChecked = React.useRef(false);
+  // Repeat rules saved before the app could switch companies carry no company. Until
+  // now the app always opened the first company on the list, so that is the company
+  // they were made in; label them with it.
+  useEffect(() => {
+    if (!orgs.length || !recurringRules.some(r => !r.orgId)) return;
+    persistRules(recurringRules.map(r => r.orgId ? r : { ...r, orgId: orgs[0].id }));
+  }, [orgs, recurringRules]);
   const [invoiceForm, setInvoiceForm] = useState({ clientName:'', clientEmail:'', poNumber:'', notes:'', taxRate:'', shipping:'', discount:'', issueDate:new Date().toISOString().slice(0,10), dueDate:'', recurring:'' });
   const [expenseForm, setExpenseForm] = useState({ vendor:'', amount:'', description:'', category:'', date:new Date().toISOString().slice(0,10), paymentMethod:'', receiptNumber:'' });
   const [showPaymentMethodPicker, setShowPaymentMethodPicker] = useState(false);
@@ -167,7 +182,9 @@ export default function HomeScreen() {
       await AsyncStorage.removeItem('accessToken');
       await AsyncStorage.removeItem('refreshToken');
     } catch(e) {}
-    setToken(null); setOrg(null); setUser(null);
+    setToken(null); activateOrg(null); setOrgs([]); setShowOrgPicker(false); setUser(null);
+    // Nothing from this login should still be on screen for the next person who signs in.
+    setInvoices([]); setExpenses([]); setBills([]); setCustomers([]); setVendors([]);
   }
 
   // Exchange the stored refresh token for a fresh access token.
@@ -198,6 +215,37 @@ export default function HomeScreen() {
     loadVendors(orgId, tok);
   }
 
+  // ---- Companies ----
+  // Make a company the open one. The ref is set at once (state updates a moment later)
+  // so the loaders can tell which company's replies are still wanted.
+  function activateOrg(o) { activeOrgRef.current = o?.id || null; setOrg(o || null); }
+
+  // After any sign-in or session restore: remember every company this login can open,
+  // then open the one last used on this phone, or the first on the list.
+  async function openCompanies(d, tok) {
+    const list = (d.orgs && d.orgs.length) ? d.orgs : (d.org ? [d.org] : []);
+    let savedId = null;
+    try { savedId = await AsyncStorage.getItem('activeOrgId'); } catch(e) {}
+    const start = list.find(o => o.id === savedId) || list[0] || null;
+    setOrgs(list);
+    activateOrg(start);
+    if (start) loadAll(start.id, tok);
+    return start;
+  }
+
+  // Switch to another company from the picker.
+  function switchOrg(next) {
+    setShowOrgPicker(false);
+    if (!next || next.id === org?.id) return;
+    // Clear the previous company's records straight away, so they can never be shown
+    // or acted on under the new company's name while the new ones load.
+    setInvoices([]); setExpenses([]); setBills([]); setCustomers([]); setVendors([]);
+    setSelectedInvoice(null); setSelectedExpense(null); setSelectedBill(null); setSelectedCustomer(null); setSelectedVendor(null);
+    activateOrg(next);
+    AsyncStorage.setItem('activeOrgId', next.id).catch(()=>{});
+    loadAll(next.id, token);
+  }
+
   // On app launch, try to restore a saved session so field users stay logged in.
   useEffect(() => {
     (async () => {
@@ -208,9 +256,8 @@ export default function HomeScreen() {
         const j = await r.json();
         const d = j.data || j;
         if (d.user) {
-          const activeOrg = d.orgs?.[0] || d.org;
-          setUser(d.user); setOrg(activeOrg);
-          loadAll(activeOrg?.id, tok);
+          await openCompanies(d, tok);
+          setUser(d.user);
         }
       } catch(e) {
       } finally { setRestoring(false); }
@@ -225,10 +272,10 @@ export default function HomeScreen() {
 
   // Complete login after a successful auth response (shared by login + verify2FA).
   async function finishLogin(d) {
-    const activeOrg = d.orgs?.[0] || d.org;
-    setUser(d.user); setOrg(activeOrg); setToken(d.accessToken);
+    setToken(d.accessToken);
     await saveSession(d.accessToken, d.refreshToken);
-    loadAll(activeOrg?.id, d.accessToken);
+    await openCompanies(d, d.accessToken);
+    setUser(d.user);
   }
 
   // One-tap demo: sign into a sample company with no account (App Store 5.1.1(v)).
@@ -299,11 +346,11 @@ export default function HomeScreen() {
       const j = await r.json();
       const d = j.data || j;
       if (d.user) {
-        const newOrg = d.orgs?.[0] || d.org;
-        setUser(d.user); setOrg(newOrg); setToken(d.accessToken);
+        setToken(d.accessToken);
         await saveSession(d.accessToken, d.refreshToken);
+        await openCompanies(d, d.accessToken);
+        setUser(d.user);
         setShowRegister(false);
-        loadAll(newOrg?.id, d.accessToken);
       } else Alert.alert('Error', j.message || 'Registration failed');
     } catch(e) { Alert.alert('Error', 'Cannot connect'); }
   }
@@ -322,6 +369,7 @@ export default function HomeScreen() {
     try {
       const r = await authedGet('/orgs/'+orgId+'/invoices', tok);
       const j = await r.json();
+      if (orgId !== activeOrgRef.current) return;   // reply for a company no longer open
       if (j.success) setInvoices(j.data);
     } catch(e) {}
   }
@@ -330,6 +378,7 @@ export default function HomeScreen() {
     try {
       const r = await authedGet('/orgs/'+orgId+'/expenses', tok);
       const j = await r.json();
+      if (orgId !== activeOrgRef.current) return;
       if (j.success) setExpenses(j.data);
     } catch(e) {}
   }
@@ -337,19 +386,20 @@ export default function HomeScreen() {
   async function loadCustomers(orgId, tok) {
     try {
       const r = await authedGet('/orgs/'+orgId+'/contacts?type=customer', tok);
-      const j = await r.json(); setCustomers(j.data||[]);
+      const j = await r.json(); if (orgId !== activeOrgRef.current) return; setCustomers(j.data||[]);
     } catch(e) {}
   }
   async function loadVendors(orgId, tok) {
     try {
       const r = await authedGet('/orgs/'+orgId+'/contacts?type=vendor', tok);
-      const j = await r.json(); setVendors(j.data||[]);
+      const j = await r.json(); if (orgId !== activeOrgRef.current) return; setVendors(j.data||[]);
     } catch(e) {}
   }
   async function loadBills(orgId, tok) {
     try {
       const r = await authedGet('/orgs/'+orgId+'/bills', tok);
       const j = await r.json();
+      if (orgId !== activeOrgRef.current) return;
       if (j.success) setBills(j.data);
     } catch(e) {}
   }
@@ -361,22 +411,29 @@ export default function HomeScreen() {
   function upsertRule({ type, sourceId, freq, anchorDate, label, payload }) {
     const others = recurringRules.filter(r => !(r.type===type && r.sourceId===sourceId));
     if (!freq) { persistRules(others); return; }
-    const rule = { id: String(Date.now())+'_'+Math.floor(Math.random()*10000), type, sourceId, freq, nextRun: advanceDate(anchorDate, freq), label, payload };
+    // Each rule remembers the company it was made in, so it can only ever create its
+    // invoice or bill there, whichever company happens to be open when it comes due.
+    const rule = { id: String(Date.now())+'_'+Math.floor(Math.random()*10000), orgId: org?.id, type, sourceId, freq, nextRun: advanceDate(anchorDate, freq), label, payload };
     persistRules([...others, rule]);
   }
+  // The company a repeat rule belongs to (rules from before company switching have
+  // none saved; they were made in the first company on the list).
+  function ruleOrgId(rule) { return rule.orgId || orgs[0]?.id || org?.id; }
 
   async function generateFromRule(rule) {
     try {
+      const target = ruleOrgId(rule);   // always the rule's own company
+      if (!target) return false;
       if (rule.type==='invoice') {
         const body = { ...rule.payload, issueDate: new Date().toISOString().slice(0,10) };
-        const r = await fetch(API+'/orgs/'+org.id+'/invoices', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify(body) });
+        const r = await fetch(API+'/orgs/'+target+'/invoices', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify(body) });
         const j = await r.json();
-        if (j.success) { loadInvoices(org.id, token); return true; }
+        if (j.success) { if (target === activeOrgRef.current) loadInvoices(target, token); return true; }
       } else {
         const body = { ...rule.payload, dueDate: new Date().toISOString().slice(0,10), date: new Date().toISOString().slice(0,10) };
-        const r = await fetch(API+'/orgs/'+org.id+'/bills', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify(body) });
+        const r = await fetch(API+'/orgs/'+target+'/bills', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body:JSON.stringify(body) });
         const j = await r.json();
-        if (j.success) { loadBills(org.id, token); return true; }
+        if (j.success) { if (target === activeOrgRef.current) loadBills(target, token); return true; }
       }
     } catch(e) {}
     return false;
@@ -386,7 +443,8 @@ export default function HomeScreen() {
   function checkRecurringDue() {
     const today = new Date().toISOString().slice(0,10);
     let working = recurringRules.slice();
-    const due = working.filter(r => r.nextRun && r.nextRun <= today);
+    // Only this company's repeating items; another company's wait until it is opened.
+    const due = working.filter(r => r.nextRun && r.nextRun <= today && ruleOrgId(r) === org.id);
     if (!due.length) return;
     let idx = 0;
     const advance = (rule) => { working = working.map(r => r.id===rule.id ? { ...r, nextRun: advanceDate(rule.nextRun, rule.freq) } : r); persistRules(working); };
@@ -817,6 +875,8 @@ export default function HomeScreen() {
     );
   }
 
+  // Companies in name order for the picker.
+  const sortedOrgs = [...orgs].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''), undefined, {sensitivity:'base'}));
   const totalInvoiced = invoices.reduce((s,i)=>s+Number(i.total),0);
   const totalExpenses = expenses.reduce((s,e)=>s+Number(e.amount),0);
 
@@ -831,7 +891,40 @@ export default function HomeScreen() {
           <Text style={{color:t.accent,fontSize:13}}>Sign out</Text>
         </TouchableOpacity>
       </View>
-      <Text style={{color:t.sub,fontSize:13,paddingHorizontal:24,marginBottom:16}}>{org?.name}</Text>
+      {orgs.length > 1 ? (
+        <TouchableOpacity onPress={()=>setShowOrgPicker(true)} accessibilityRole="button" accessibilityLabel={'Company: '+(org?.name||'')+'. Switch company'} style={{marginHorizontal:24,marginBottom:16,backgroundColor:t.card,borderColor:t.border,borderWidth:1,borderRadius:12,paddingVertical:10,paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>
+          <View style={{flex:1,paddingRight:10}}>
+            <Text style={{color:t.sub,fontSize:11,fontWeight:'700',letterSpacing:1}}>COMPANY</Text>
+            <Text numberOfLines={1} style={{color:t.text,fontSize:16,fontWeight:'600',marginTop:2}}>{org?.name}</Text>
+          </View>
+          <Text style={{color:t.accent,fontSize:13,fontWeight:'600'}}>Switch</Text>
+        </TouchableOpacity>
+      ) : (
+        <Text style={{color:t.sub,fontSize:13,paddingHorizontal:24,marginBottom:16}}>{org?.name}</Text>
+      )}
+
+      {/* Company picker: offered when this login can open more than one company */}
+      <Modal visible={showOrgPicker} animationType="slide" presentationStyle="pageSheet" onRequestClose={()=>setShowOrgPicker(false)}>
+        <ScrollView style={{flex:1,backgroundColor:t.bg}}>
+          <View style={{padding:24,paddingTop:60}}>
+            <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+              <Text style={{color:t.text,fontSize:24,fontWeight:'700'}}>Your companies</Text>
+              <TouchableOpacity onPress={()=>setShowOrgPicker(false)}><Text style={{color:t.sub,fontSize:16}}>Close</Text></TouchableOpacity>
+            </View>
+            <Text style={{color:t.sub,fontSize:13,marginBottom:16}}>Choose the company to work in. The app opens it again next time.</Text>
+            {sortedOrgs.map(o => {
+              const current = o.id === org?.id;
+              return (
+                <TouchableOpacity key={o.id} onPress={()=>switchOrg(o)} accessibilityRole="button" accessibilityState={{selected:current}} style={{backgroundColor:t.card,borderColor:current?t.accent:t.border,borderWidth:current?2:1,borderRadius:12,padding:16,marginBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+                  <Text numberOfLines={2} style={{flex:1,paddingRight:12,color:t.text,fontSize:16,fontWeight:current?'700':'500'}}>{o.name}</Text>
+                  <Text style={{color:current?t.accent:t.sub,fontSize:13,fontWeight:'600'}}>{current?'Current':'Open'}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </ScrollView>
+      </Modal>
+
       <View style={{flexDirection:'row',gap:12,paddingHorizontal:24,marginBottom:24}}>
         <View style={{flex:1,backgroundColor:t.card,borderColor:t.border,borderWidth:1,borderRadius:12,padding:16}}>
           <Text style={{color:t.sub,fontSize:11,marginBottom:4}}>TOTAL INVOICED</Text>

@@ -2,17 +2,24 @@
   "expo": {
     "name": "Mountain Top Ledger",
     "slug": "ledger-app",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "ledgerapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "updates": {
+      "url": "https://u.expo.dev/aa1ff639-fbf5-4cb6-992b-5b3c4d49fd37"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mountaintopledger.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,"NSCameraUsageDescription": "Used to scan receipts for expenses",
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Used to scan receipts for expenses",
         "NSPhotoLibraryUsageDescription": "Used to select receipt photos for expenses"
       }
     },
@@ -53,7 +60,9 @@
     },
     "extra": {
       "router": {},
-      "eas": {}
+      "eas": {
+        "projectId": "aa1ff639-fbf5-4cb6-992b-5b3c4d49fd37"
+      }
     }
   }
 }
